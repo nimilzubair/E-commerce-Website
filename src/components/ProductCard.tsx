@@ -1,4 +1,5 @@
 "use client";
+<<<<<<< Updated upstream
 
 import { Product } from "@/types/product";
 import { useState } from "react";
@@ -47,6 +48,48 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
         ) : (
           <span className="text-gray-400">No Image</span>
         )}
+=======
+
+import Image from "next/image";
+import { Product } from "@/types/product";
+
+interface ProductCardProps {
+  product: Product;
+}
+
+export default function ProductCard({ product }: ProductCardProps) {
+  const hasImage = product.image_url?.trim() !== "";
+
+  return (
+    <div className="bg-white border rounded-2xl shadow-sm hover:shadow-lg transition-all duration-200 p-4 flex flex-col text-center">
+      {/* ✅ FIX: Fixed-size container instead of fill */}
+      <div className="w-full flex justify-center mb-3">
+        {hasImage ? (
+          <Image
+            src={product.image_url}
+            alt={product.name}
+            width={180} // 👈 fixed width
+            height={180} // 👈 fixed height
+            className="rounded-xl object-cover hover:scale-105 transition-transform duration-300"
+            unoptimized={product.image_url.includes("supabase.co")}
+          />
+        ) : (
+          <div className="flex items-center justify-center w-[180px] h-[180px] bg-gray-100 text-gray-400 text-sm rounded-xl">
+            No Image
+          </div>
+        )}
+      </div>
+
+      {/* Product Info */}
+      <h2 className="text-lg font-semibold">{product.name}</h2>
+      <p className="text-gray-600 text-sm mb-2">
+        {product.description || "No description available."}
+      </p>
+
+      <div className="flex justify-between items-center w-full mt-auto text-sm">
+        <span className="text-gray-800 font-bold">Rs. {product.price}</span>
+        <span className="text-gray-500">Stock: {product.quantity}</span>
+>>>>>>> Stashed changes
       </div>
 
       {/* Product Info */}

@@ -10,7 +10,17 @@ export default function SummerPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
+<<<<<<< Updated upstream
     fetchProducts();
+=======
+    fetch("/api/products?category=summer")
+      .then((res) => res.json())
+      .then((data) => {
+        console.log("Fetched products:", data); // 👈 add this
+        setProducts(Array.isArray(data) ? data : []); // safety check
+      })
+      .catch((err) => console.error("Fetch error:", err));
+>>>>>>> Stashed changes
   }, []);
 
   const fetchProducts = async () => {
@@ -84,6 +94,7 @@ export default function SummerPage() {
   return (
     <div className="p-6">
       <h1 className="text-2xl font-semibold mb-4">☀️ Summer Collection</h1>
+<<<<<<< Updated upstream
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {products.map((p) => (
           <ProductCard key={p.id} product={p} onAddToCart={addToCart} />
@@ -93,6 +104,16 @@ export default function SummerPage() {
       {products.length === 0 && !loading && (
         <div className="text-center mt-8">
           <p>No products found in summer collection</p>
+=======
+
+      {products.length === 0 ? (
+        <p className="text-gray-500">No products found.</p>
+      ) : (
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          {products.map((p) => (
+            <ProductCard key={p.id} product={p} />
+          ))}
+>>>>>>> Stashed changes
         </div>
       )}
     </div>
