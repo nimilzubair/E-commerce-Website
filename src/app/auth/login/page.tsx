@@ -20,7 +20,6 @@ export default function LoginPage() {
     const data = await res.json();
     if (res.ok) {
       alert("Logged in!");
-      localStorage.setItem("currentUser", JSON.stringify(data.user));
       router.push("/"); // redirect to home
     } else {
       alert(data.error);

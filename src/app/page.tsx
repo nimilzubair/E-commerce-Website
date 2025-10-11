@@ -27,23 +27,23 @@ export default function MainPage() {
     fetchUsers();
   }, []);
 
-  // Load logged-in user from localStorage safely
+  // Fetch logged-in user from server using cookie
   useEffect(() => {
-    const storedUser = localStorage.getItem("currentUser");
-    if (storedUser) {
+    const fetchCurrentUser = async () => {
       try {
-        const user = JSON.parse(storedUser);
-        setCurrentUser(user);
+        const res = await fetch("/api/auth/currentcookie");
+        const data = await res.json();
+        setCurrentUser(data.user);
       } catch (err) {
-        console.error("Failed to parse stored user:", err);
-        localStorage.removeItem("currentUser");
+        setCurrentUser(null);
       }
-    }
+    };
+    fetchCurrentUser();
   }, []);
 
   // Sign out
-  const handleSignOut = () => {
-    localStorage.removeItem("currentUser");
+  const handleSignOut = async () => {
+    await fetch("/api/auth/signout", { method: "POST" });
     setCurrentUser(null);
     router.push("/auth/login");
   };
