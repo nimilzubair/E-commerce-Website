@@ -1,5 +1,6 @@
 import './globals.css'
 import { ReactNode } from 'react'
+import { CartProvider } from '@/context/CartContext';
 
 export const metadata = {
   title: 'E-commerce Website',
@@ -9,7 +10,9 @@ export const metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <CartProvider>{children}</CartProvider>
+      </body>
     </html>
-  )
+  );
 }

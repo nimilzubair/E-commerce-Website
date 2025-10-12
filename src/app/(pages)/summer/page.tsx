@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useCartContext } from "@/context/CartContext";
 import ProductCard from "@/components/ProductCard";
 import { Product } from "@/types/product";
 
@@ -9,9 +10,11 @@ export default function SummerPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const { cartChanged, signalCartChange } = useCartContext();
+
   useEffect(() => {
     fetchProducts();
-  }, []);
+  }, [cartChanged]);
 
   // ✅ Fetch summer category products
   const fetchProducts = async () => {
@@ -51,6 +54,7 @@ export default function SummerPage() {
 
       if (res.ok) {
         alert(`✅ Added ${productName} to cart!`);
+        signalCartChange();
       } else {
         alert(data.error || "Failed to add to cart");
       }

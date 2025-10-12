@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useCartContext } from "@/context/CartContext";
 import ProductCard from "@/components/ProductCard";
 import { Product } from "@/types/product";
 
@@ -9,9 +10,11 @@ export default function WinterPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const { cartChanged, signalCartChange } = useCartContext();
+
   useEffect(() => {
     fetchProducts();
-  }, []);
+  }, [cartChanged]);
 
   const fetchProducts = async () => {
     try {
@@ -41,6 +44,7 @@ export default function WinterPage() {
 
       if (res.ok) alert(`Added ${productName} to cart!`);
       else alert(data.error || "Failed to add to cart");
+      if (res.ok) signalCartChange();
     } catch (err) {
       console.error("Add to cart error:", err);
       alert("Network error - failed to add to cart");

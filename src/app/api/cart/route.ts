@@ -1,3 +1,121 @@
+// =========================
+// DELETE: Remove item from cart
+// =========================
+export async function DELETE(req: Request) {
+  try {
+    const cookieStore = await cookies();
+    const userCookie = cookieStore.get("user_id");
+    const userId = userCookie?.value;
+
+    if (!userId) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
+
+    // Get cartItemId from query string for RESTful compliance
+    const url = new URL(req.url);
+    const cartItemId = url.searchParams.get("cartItemId");
+    if (!cartItemId) {
+      return NextResponse.json({ error: "Missing cart item ID" }, { status: 400 });
+    }
+
+    // Get cart item and variant info
+    const { data: cartItem, error: cartItemError } = await supabaseServer
+      .from("cart_items")
+      .select("id, quantity, product_variant_id, cart_id")
+      .eq("id", cartItemId)
+      .maybeSingle();
+
+    if (cartItemError || !cartItem) {
+      return NextResponse.json({ error: "Cart item not found" }, { status: 404 });
+    }
+
+    // Increment product variant stock by quantity being removed
+    const { data: variant, error: variantError } = await supabaseServer
+      .from("product_variants")
+      .select("stock")
+      .eq("id", cartItem.product_variant_id)
+      .maybeSingle();
+
+    if (variantError || !variant) {
+      return NextResponse.json({ error: "Product variant not found for stock update" }, { status: 500 });
+    }
+
+    await supabaseServer
+      .from("product_variants")
+      .update({ stock: (variant.stock ?? 0) + cartItem.quantity })
+      .eq("id", cartItem.product_variant_id);
+
+    // Delete cart item
+    const { error: deleteError } = await supabaseServer
+      .from("cart_items")
+      .delete()
+      .eq("id", cartItemId);
+
+    if (deleteError) {
+      return NextResponse.json({ error: "Failed to remove item from cart" }, { status: 500 });
+    }
+
+    return NextResponse.json({ message: "Item removed from cart" });
+  } catch (err) {
+    console.error("Remove from cart error:", err);
+    return NextResponse.json({ error: "Something went wrong" }, { status: 500 });
+  }
+}
+// =========================
+// GET: Get current user's cart and items
+// =========================
+export async function GET() {
+  try {
+  const cookieStore = await cookies();
+  const userCookie = cookieStore.get("user_id");
+  const userId = userCookie?.value;
+
+    if (!userId) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
+
+    // Get user's cart
+    const { data: cart } = await supabaseServer
+      .from("carts")
+      .select("id")
+      .eq("customer_id", userId)
+      .maybeSingle();
+
+    if (!cart) {
+      return NextResponse.json({ cartId: null, items: [] });
+    }
+
+    // Get cart items with product variant and product info
+    const { data: items, error: itemsError } = await supabaseServer
+      .from("cart_items")
+      .select(`
+        id,
+        quantity,
+        unit_price,
+        product_variant:product_variants!inner (
+          id,
+          size,
+          color,
+          product:products!inner (
+            id,
+            name,
+            price,
+            discount
+          )
+        )
+      `)
+      .eq("cart_id", cart.id);
+
+    if (itemsError) {
+      return NextResponse.json({ error: itemsError.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ cartId: cart.id, items: items || [] });
+  } catch (err) {
+    console.error("Cart GET error:", err);
+    return NextResponse.json({ error: "Something went wrong" }, { status: 500 });
+  }
+}
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { supabaseServer } from "@/lib/supabase/server";
@@ -35,8 +153,7 @@ export async function POST(req: Request) {
           name,
           price,
           discount,
-          is_available,
-          image_url
+          is_available
         )
       `)
       .eq("id", productVariantId)
@@ -48,7 +165,8 @@ export async function POST(req: Request) {
     }
 
     // 4️⃣ Get price from parent product
-    const productPrice = variant.product?.price;
+    const productObj = Array.isArray(variant.product) ? variant.product[0] : variant.product;
+    const productPrice = productObj?.price;
     if (productPrice == null) {
       console.error("Product price not found for variant", variant);
       return NextResponse.json({ error: "Product price not found" }, { status: 500 });
@@ -115,6 +233,12 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: "Failed to update cart item" }, { status: 500 });
       }
 
+      // Decrement stock by quantity added
+      await supabaseServer
+        .from("product_variants")
+        .update({ stock: (variant.stock ?? 0) - quantity })
+        .eq("id", productVariantId);
+
       // Attach product info
       updatedItem.product_variant = variant;
       result = { message: "Item quantity updated in cart", cartItem: updatedItem, action: "updated" };
@@ -141,6 +265,12 @@ export async function POST(req: Request) {
         });
         return NextResponse.json({ error: "Failed to add item to cart" }, { status: 500 });
       }
+
+      // Decrement stock by quantity added
+      await supabaseServer
+        .from("product_variants")
+        .update({ stock: (variant.stock ?? 0) - quantity })
+        .eq("id", productVariantId);
 
       // Attach product info
       cartItem.product_variant = variant;

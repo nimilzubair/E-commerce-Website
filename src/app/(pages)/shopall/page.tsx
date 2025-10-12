@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useCartContext } from "@/context/CartContext";
 import ProductCard from "@/components/ProductCard";
 import { Product } from "@/types/product";
 
@@ -9,9 +10,11 @@ export default function ShopAllPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const { cartChanged, signalCartChange } = useCartContext();
+
   useEffect(() => {
     fetchProducts();
-  }, []);
+  }, [cartChanged]);
 
   const fetchProducts = async () => {
     try {
@@ -34,7 +37,17 @@ export default function ShopAllPage() {
   };
 
   const addToCart = async (productVariantId: string, productName: string) => {
+  console.log('Adding to cart, productVariantId:', productVariantId);
     try {
+      // Check authentication
+      const authRes = await fetch("/api/auth/currentcookie");
+      const authData = await authRes.json();
+      if (!authData.user) {
+        alert("You must be logged in to add items to your cart.");
+        window.location.href = "/auth/login";
+        return;
+      }
+
       const res = await fetch("/api/cart", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -48,6 +61,7 @@ export default function ShopAllPage() {
       
       if (res.ok) {
         alert(`Added ${productName} to cart!`);
+        signalCartChange();
       } else {
         alert(data.error || "Failed to add to cart");
       }

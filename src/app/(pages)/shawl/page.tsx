@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useCartContext } from "@/context/CartContext";
 import ProductCard from "@/components/ProductCard";
 import { Product } from "@/types/product";
 
@@ -9,9 +10,11 @@ export default function ShawlPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const { cartChanged, signalCartChange } = useCartContext();
+
   useEffect(() => {
     fetchProducts();
-  }, []);
+  }, [cartChanged]);
 
   const fetchProducts = async () => {
     try {
@@ -48,6 +51,7 @@ export default function ShawlPage() {
       
       if (res.ok) {
         alert(`Added ${productName} to cart!`);
+        signalCartChange();
       } else {
         alert(data.error || "Failed to add to cart");
       }

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useCartContext } from "@/context/CartContext";
 
 interface CartItem {
   id: string;
@@ -25,6 +26,7 @@ interface CartResponse {
 }
 
 export default function CartPage() {
+  const { signalCartChange } = useCartContext();
   const [cart, setCart] = useState<CartResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -65,6 +67,7 @@ export default function CartPage() {
 
       if (res.ok) {
         fetchCart();
+        signalCartChange();
       } else {
         const errorData = await res.json();
         alert(errorData.error || "Failed to update quantity");
@@ -82,6 +85,7 @@ export default function CartPage() {
 
       if (res.ok) {
         fetchCart();
+        signalCartChange();
       } else {
         const errorData = await res.json();
         alert(errorData.error || "Failed to remove item");

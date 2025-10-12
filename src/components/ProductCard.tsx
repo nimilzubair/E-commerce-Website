@@ -10,24 +10,19 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({ product, onAddToCart }: ProductCardProps) {
-  const hasVariants =
-    Array.isArray(product.product_variants) && product.product_variants.length > 0;
+  const variants = product.product_variants ?? [];
+  const hasVariants = variants.length > 0;
 
-  // Fallback variant if no variants exist
-  const defaultVariant: ProductVariant = product.product_variants?.[0] ?? {
-    id: product.id,
-    product_id: product.id,
-    size: "Default",
-    color: "Standard",
-    stock: product.quantity ?? 0,
-    sku: undefined,
-  };
-
-  const [selectedVariant, setSelectedVariant] = useState<ProductVariant>(defaultVariant);
+  // Only allow add to cart if there is a valid variant
+  const defaultVariant: ProductVariant | undefined = hasVariants ? variants[0] : undefined;
+  const [selectedVariant, setSelectedVariant] = useState<ProductVariant | undefined>(defaultVariant);
   const [addingToCart, setAddingToCart] = useState(false);
 
   const handleAddToCart = async () => {
-    if (!selectedVariant || !onAddToCart) return;
+    if (!selectedVariant || !onAddToCart) {
+      alert("This product cannot be added to cart because it has no valid variant.");
+      return;
+    }
 
     setAddingToCart(true);
     try {
@@ -93,16 +88,17 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
       {hasVariants && (
         <div className="mb-3">
           <select
-            value={selectedVariant.id}
+            value={selectedVariant ? selectedVariant.id : ""}
             onChange={(e) => {
-              const variant = product.product_variants?.find(
+              const variant = variants.find(
                 (v) => v.id === e.target.value
               );
               if (variant) setSelectedVariant(variant);
             }}
             className="w-full border rounded px-2 py-1 text-sm"
+            disabled={!selectedVariant}
           >
-            {product.product_variants?.map((variant) => (
+            {variants.map((variant) => (
               <option key={variant.id} value={variant.id}>
                 {variant.size || "-"} - {variant.color || "-"} (
                 {variant.stock ?? 0} left)
@@ -113,7 +109,7 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
       )}
 
       {/* Add to Cart Button */}
-      {onAddToCart && (
+      {onAddToCart && hasVariants && selectedVariant && (
         <button
           onClick={handleAddToCart}
           disabled={addingToCart || (selectedVariant.stock ?? 0) === 0}
