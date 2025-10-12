@@ -6,21 +6,26 @@ interface CartItem {
   id: string;
   quantity: number;
   unit_price: number;
-  product_variants: {
+  product_variant: {
     id: string;
-    size: string;
-    color: string;
-    products: {
+    size?: string;
+    color?: string;
+    product: {
       id: string;
       name: string;
       price: number;
-      discount: number;
+      discount?: number;
     };
   };
 }
 
+interface CartResponse {
+  cartId: string;
+  items: CartItem[];
+}
+
 export default function CartPage() {
-  const [cart, setCart] = useState<{ items: CartItem[] } | null>(null);
+  const [cart, setCart] = useState<CartResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -32,7 +37,7 @@ export default function CartPage() {
     try {
       setLoading(true);
       const res = await fetch("/api/cart");
-      
+
       if (res.ok) {
         const data = await res.json();
         setCart(data);
@@ -50,6 +55,7 @@ export default function CartPage() {
   };
 
   const updateQuantity = async (itemId: string, newQuantity: number) => {
+    if (newQuantity <= 0) return; // Prevent invalid quantity
     try {
       const res = await fetch(`/api/cart/${itemId}`, {
         method: "PUT",
@@ -58,7 +64,7 @@ export default function CartPage() {
       });
 
       if (res.ok) {
-        fetchCart(); // Refresh cart
+        fetchCart();
       } else {
         const errorData = await res.json();
         alert(errorData.error || "Failed to update quantity");
@@ -75,7 +81,7 @@ export default function CartPage() {
       });
 
       if (res.ok) {
-        fetchCart(); // Refresh cart
+        fetchCart();
       } else {
         const errorData = await res.json();
         alert(errorData.error || "Failed to remove item");
@@ -98,10 +104,7 @@ export default function CartPage() {
       <div className="min-h-screen flex flex-col items-center justify-center">
         <h1 className="text-2xl font-bold mb-4">Your Shopping Cart</h1>
         <p>Error: {error}</p>
-        <button 
-          onClick={fetchCart}
-          className="mt-4 border px-4 py-2"
-        >
+        <button onClick={fetchCart} className="mt-4 border px-4 py-2">
           Retry
         </button>
       </div>
@@ -111,7 +114,7 @@ export default function CartPage() {
   return (
     <div className="min-h-screen p-8">
       <h1 className="text-2xl font-bold mb-8">Your Shopping Cart</h1>
-      
+
       {!cart || cart.items.length === 0 ? (
         <div>
           <p>Your cart is empty</p>
@@ -123,55 +126,47 @@ export default function CartPage() {
           <div className="mt-4 space-y-4">
             {cart.items.map((item) => (
               <div key={item.id} className="border p-4">
-                <h3>{item.product_variants.products.name}</h3>
-                <p>Size: {item.product_variants.size}</p>
-                <p>Color: {item.product_variants.color}</p>
+                <h3>{item.product_variant.product.name}</h3>
+                <p>Size: {item.product_variant.size || "-"}</p>
+                <p>Color: {item.product_variant.color || "-"}</p>
                 <p>Unit Price: ${item.unit_price}</p>
-                
+
                 <div className="flex items-center gap-2 mt-2">
                   <span>Quantity:</span>
-                  <button 
+                  <button
                     onClick={() => updateQuantity(item.id, item.quantity - 1)}
                     disabled={item.quantity <= 1}
                   >
                     -
                   </button>
                   <span>{item.quantity}</span>
-                  <button 
-                    onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                  >
+                  <button onClick={() => updateQuantity(item.id, item.quantity + 1)}>
                     +
                   </button>
                 </div>
-                
+
                 <p>Total: ${(item.unit_price * item.quantity).toFixed(2)}</p>
-                
-                <button 
-                  onClick={() => removeItem(item.id)}
-                  className="mt-2 border px-3 py-1"
-                >
+
+                <button onClick={() => removeItem(item.id)} className="mt-2 border px-3 py-1">
                   Remove
                 </button>
               </div>
             ))}
           </div>
-          
+
           <div className="mt-6 border-t pt-4">
             <h3 className="text-xl font-bold">
               Cart Total: $
               {cart.items
-                .reduce((total, item) => total + (item.unit_price * item.quantity), 0)
+                .reduce((total, item) => total + item.unit_price * item.quantity, 0)
                 .toFixed(2)}
             </h3>
           </div>
         </div>
       )}
-      
+
       <div className="mt-8">
-        <button 
-          onClick={fetchCart}
-          className="border px-4 py-2"
-        >
+        <button onClick={fetchCart} className="border px-4 py-2">
           Refresh Cart
         </button>
       </div>

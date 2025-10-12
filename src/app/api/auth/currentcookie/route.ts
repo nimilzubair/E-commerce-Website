@@ -4,12 +4,7 @@ import { NextResponse } from "next/server";
 
 export async function GET() {
   try {
-<<<<<<< Updated upstream
-    const cookieStore = await cookies(); // server-only API
-=======
-    
     const cookieStore = await cookies(); 
->>>>>>> Stashed changes
     const userCookie = cookieStore.get("user_id");
     const userId = userCookie?.value;
 
