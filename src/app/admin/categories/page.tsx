@@ -12,7 +12,7 @@ export default function CategoriesPage() {
 
   const fetchCategories = async () => {
     try {
-      const res = await fetch("/api/categories");
+      const res = await fetch("/api/admin/categories");
       const data = await res.json();
       if (res.ok) {
         setCategories(data.categories || []);
@@ -28,7 +28,7 @@ export default function CategoriesPage() {
     if (!confirm("Are you sure you want to delete this category?")) return;
 
     try {
-      const res = await fetch(`/api/categories/${id}`, {
+      const res = await fetch(`/api/admin/categories/${id}`, {
         method: "DELETE",
       });
       
@@ -46,7 +46,7 @@ export default function CategoriesPage() {
 
   const toggleStatus = async (id: string, currentStatus: boolean) => {
     try {
-      const res = await fetch(`/api/categories/${id}`, {
+      const res = await fetch(`/api/admin/categories/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ is_active: !currentStatus }),

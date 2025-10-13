@@ -23,8 +23,8 @@ export async function GET(request: Request) {
         categories!inner(
           id,
           name, 
-          slug,
-          is_active
+          slug
+          // Remove is_active since column doesn't exist
         ),
         product_variants(
           id,

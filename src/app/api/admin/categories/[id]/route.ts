@@ -50,7 +50,7 @@ export async function PUT(
 ) {
   try {
     const { id } = await params;
-    const { name, description, is_active } = await req.json();
+    const { name, description } = await req.json();
 
     // Validation
     if (!name || !name.trim()) {

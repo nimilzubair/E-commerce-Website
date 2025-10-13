@@ -28,7 +28,7 @@ export async function GET() {
       name: category.name,
       slug: category.slug,
       description: category.description,
-      is_active: category.is_active,
+      // Remove is_active since column doesn't exist
       product_count: category.products?.[0]?.count || 0,
       created_at: category.created_at,
       updated_at: category.updated_at
@@ -48,7 +48,7 @@ export async function GET() {
 // POST create new category
 export async function POST(req: Request) {
   try {
-    const { name, description, is_active = true } = await req.json();
+    const { name, description } = await req.json(); // Remove is_active
 
     // Validation
     if (!name || !name.trim()) {
@@ -87,7 +87,7 @@ export async function POST(req: Request) {
         name: name.trim(),
         slug,
         description: description?.trim() || null,
-        is_active
+        // Remove is_active since column doesn't exist
       }])
       .select()
       .single();

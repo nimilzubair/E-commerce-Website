@@ -44,26 +44,28 @@ export async function POST(req: Request) {
       );
     }
 
-    // Get category with validation
+    // Get category with validation - REMOVED is_active check
     const { data: category, error: catErr } = await supabaseServer
       .from("categories")
-      .select("id, name, is_active")
+      .select("id, name, slug") // Removed is_active since column doesn't exist
       .eq("slug", categorySlug)
       .single();
 
     if (catErr || !category) {
+      console.error("Category lookup error:", catErr);
       return NextResponse.json(
         { error: "Category not found" }, 
         { status: 404 }
       );
     }
 
-    if (!category.is_active) {
-      return NextResponse.json(
-        { error: "Selected category is not active" }, 
-        { status: 400 }
-      );
-    }
+    // REMOVED the is_active check since the column doesn't exist
+    // if (!category.is_active) {
+    //   return NextResponse.json(
+    //     { error: "Selected category is not active" }, 
+    //     { status: 400 }
+    //   );
+    // }
 
     // Check if product name already exists in same category
     const { data: existingProduct } = await supabaseServer
