@@ -1,3 +1,4 @@
+// app/admin/products/add/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -17,10 +18,16 @@ export default function AddProductPage() {
     category: "",
   });
 
-  // Variants state: array of { size, stock }
+  // Variants state: array of { size, color, stock }
   const [variants, setVariants] = useState([
-    { size: "", stock: "" }
+    { size: "", color: "", stock: "" }
   ]);
+
+  // Predefined color options
+  const colorOptions = [
+    "Black", "White", "Red", "Blue", "Green", "Yellow", "Purple", "Pink",
+    "Orange", "Brown", "Gray", "Navy", "Teal", "Maroon", "Beige", "Charcoal"
+  ];
 
   useEffect(() => {
     fetchCategories();
@@ -30,7 +37,7 @@ export default function AddProductPage() {
     try {
       const res = await fetch("/api/admin/categories");
       const data = await res.json();
-      console.log("Categories fetched:", data.categories); // Debug log
+      console.log("Categories fetched:", data.categories);
       if (res.ok) {
         setCategories(data.categories || []);
       }
@@ -58,8 +65,18 @@ export default function AddProductPage() {
       return;
     }
 
-    console.log("Submitting form data:", formData); // Debug log
-    console.log("Selected file:", selectedFile.name); // Debug log
+    // Validate variants
+    const validVariants = variants.filter(v => 
+      v.size && v.color && v.stock && !isNaN(Number(v.stock))
+    );
+    
+    if (validVariants.length === 0) {
+      alert("Please add at least one valid variant with size, color, and quantity");
+      return;
+    }
+
+    console.log("Submitting form data:", formData);
+    console.log("Variants:", validVariants);
 
     setLoading(true);
 
@@ -68,10 +85,12 @@ export default function AddProductPage() {
     submitData.append("description", formData.description);
     submitData.append("price", formData.price);
     submitData.append("discount", formData.discount);
-    // Remove quantity, add variants as JSON string
     submitData.append("variants", JSON.stringify(
-      variants.filter(v => v.size && v.stock && !isNaN(Number(v.stock)))
-        .map(v => ({ size: v.size, stock: Number(v.stock) }))
+      validVariants.map(v => ({ 
+        size: v.size, 
+        color: v.color, 
+        stock: Number(v.stock) 
+      }))
     ));
     submitData.append("category_id", formData.category);
     submitData.append("file", selectedFile);
@@ -82,13 +101,13 @@ export default function AddProductPage() {
     }
 
     try {
-      const res = await fetch("/api/admin/products/add", {
+      const res = await fetch("/api/admin/products", {
         method: "POST",
         body: submitData,
       });
 
       const data = await res.json();
-      console.log("API Response:", data); // Debug log
+      console.log("API Response:", data);
       
       if (res.ok) {
         alert("Product added successfully!");
@@ -114,7 +133,7 @@ export default function AddProductPage() {
   return (
     <div>
       <h1 className="text-2xl font-bold mb-4">Add New Product</h1>
-      <form onSubmit={handleSubmit} className="max-w-2xl">
+      <form onSubmit={handleSubmit} className="max-w-4xl">
         <div className="space-y-4">
           <div>
             <label className="block font-bold mb-1">Product Name</label>
@@ -155,7 +174,7 @@ export default function AddProductPage() {
             </div>
 
             <div>
-              <label className="block font-bold mb-1">Discount</label>
+              <label className="block font-bold mb-1">Discount (%)</label>
               <input
                 type="number"
                 name="discount"
@@ -164,76 +183,108 @@ export default function AddProductPage() {
                 className="border p-2 rounded w-full"
                 step="0.01"
                 min="0"
+                max="100"
               />
             </div>
           </div>
 
           {/* Variants section */}
-          <div>
-            <label className="block font-bold mb-1">Variants (Size & Quantity)</label>
+          <div className="border p-4 rounded bg-gray-50">
+            <label className="block font-bold mb-2">Product Variants</label>
+            <p className="text-sm text-gray-600 mb-3">Add different size and color combinations with their stock quantities</p>
+            
             {variants.map((variant, idx) => (
-              <div key={idx} className="flex gap-2 mb-2">
-                <input
-                  type="text"
-                  placeholder="Size (e.g. XS, S, M, L)"
-                  value={variant.size}
-                  onChange={e => {
-                    const newVariants = [...variants];
-                    newVariants[idx].size = e.target.value;
-                    setVariants(newVariants);
-                  }}
-                  className="border p-2 rounded w-1/2"
-                  required
-                />
-                <input
-                  type="number"
-                  placeholder="Quantity"
-                  value={variant.stock}
-                  min="0"
-                  onChange={e => {
-                    const newVariants = [...variants];
-                    newVariants[idx].stock = e.target.value;
-                    setVariants(newVariants);
-                  }}
-                  className="border p-2 rounded w-1/2"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setVariants(variants.filter((_, i) => i !== idx))}
-                  className="bg-red-500 text-white px-2 rounded"
-                  disabled={variants.length === 1}
-                  title="Remove variant"
-                >
-                  &times;
-                </button>
+              <div key={idx} className="grid grid-cols-12 gap-2 mb-3 items-end">
+                <div className="col-span-4">
+                  <label className="block text-sm font-medium mb-1">Size</label>
+                  <input
+                    type="text"
+                    placeholder="e.g., XS, S, M, L, XL"
+                    value={variant.size}
+                    onChange={e => {
+                      const newVariants = [...variants];
+                      newVariants[idx].size = e.target.value;
+                      setVariants(newVariants);
+                    }}
+                    className="border p-2 rounded w-full"
+                    required
+                  />
+                </div>
+                
+                <div className="col-span-4">
+                  <label className="block text-sm font-medium mb-1">Color</label>
+                  <select
+                    value={variant.color}
+                    onChange={e => {
+                      const newVariants = [...variants];
+                      newVariants[idx].color = e.target.value;
+                      setVariants(newVariants);
+                    }}
+                    className="border p-2 rounded w-full"
+                    required
+                  >
+                    <option value="">Select Color</option>
+                    {colorOptions.map(color => (
+                      <option key={color} value={color}>{color}</option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div className="col-span-3">
+                  <label className="block text-sm font-medium mb-1">Quantity</label>
+                  <input
+                    type="number"
+                    placeholder="Stock"
+                    value={variant.stock}
+                    min="0"
+                    onChange={e => {
+                      const newVariants = [...variants];
+                      newVariants[idx].stock = e.target.value;
+                      setVariants(newVariants);
+                    }}
+                    className="border p-2 rounded w-full"
+                    required
+                  />
+                </div>
+                
+                <div className="col-span-1">
+                  <button
+                    type="button"
+                    onClick={() => setVariants(variants.filter((_, i) => i !== idx))}
+                    className="bg-red-500 text-white px-3 py-2 rounded w-full"
+                    disabled={variants.length === 1}
+                    title="Remove variant"
+                  >
+                    ×
+                  </button>
+                </div>
               </div>
             ))}
+            
             <button
               type="button"
-              onClick={() => setVariants([...variants, { size: "", stock: "" }])}
-              className="bg-green-500 text-white px-3 py-1 rounded mt-1"
+              onClick={() => setVariants([...variants, { size: "", color: "", stock: "" }])}
+              className="bg-green-500 text-white px-4 py-2 rounded mt-2"
             >
-              + Add Variant
+              + Add Another Variant
             </button>
           </div>
 
           <div>
             <label className="block font-bold mb-1">Category</label>
-            {/* // In AddProductPage component, change the select option value */}
             <select
-            name="category"
-            value={formData.category}
-            onChange={handleChange}
-            required
-            className="border p-2 rounded w-full"
+              name="category"
+              value={formData.category}
+              onChange={handleChange}
+              required
+              className="border p-2 rounded w-full"
             >
-            <option value="">Select Category</option>
-            {categories.map((category: any) => (
-                <option key={category.id} value={category.id}> {/* Change from slug to id */}
-                {category.name}
+              <option value="">Select Category</option>
+              {categories.map((category: any) => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
                 </option>
-            ))}
+              ))}
             </select>
           </div>
 

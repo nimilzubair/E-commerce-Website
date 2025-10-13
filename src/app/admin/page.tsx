@@ -1,83 +1,78 @@
+// app/admin/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState({
-    totalProducts: 0,
-    totalCategories: 0,
-    totalAdmins: 0,
+    products: 0,
+    categories: 0,
+    admins: 0
   });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const fetchStats = async () => {
+    try {
+      setLoading(true);
+      setError("");
+
+      const [productsRes, categoriesRes, adminsRes] = await Promise.all([
+        fetch("/api/admin/products"),
+        fetch("/api/admin/categories"),
+        fetch("/api/admin/admins")
+      ]);
+
+      // Check if responses are OK and have content
+      if (!productsRes.ok) throw new Error(`Products API failed: ${productsRes.status}`);
+      if (!categoriesRes.ok) throw new Error(`Categories API failed: ${categoriesRes.status}`);
+      if (!adminsRes.ok) throw new Error(`Admins API failed: ${adminsRes.status}`);
+
+      const productsText = await productsRes.text();
+      const categoriesText = await categoriesRes.text();
+      const adminsText = await adminsRes.text();
+
+      // Parse JSON only if content exists
+      const productsData = productsText ? JSON.parse(productsText) : { products: [] };
+      const categoriesData = categoriesText ? JSON.parse(categoriesText) : { categories: [] };
+      const adminsData = adminsText ? JSON.parse(adminsText) : { admins: [] };
+
+      setStats({
+        products: productsData.products?.length || 0,
+        categories: categoriesData.categories?.length || 0,
+        admins: adminsData.admins?.length || 0
+      });
+
+    } catch (err: any) {
+      console.error("Error fetching stats:", err);
+      setError(err.message || "Failed to load dashboard data");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     fetchStats();
   }, []);
 
-  const fetchStats = async () => {
-    try {
-      // You might want to create a dedicated stats API endpoint
-      const [productsRes, categoriesRes, adminsRes] = await Promise.all([
-        fetch("/api/admin/products"),
-        fetch("/api/categories"),
-        fetch("/api/auth/admin/admins"),
-      ]);
-
-      const productsData = await productsRes.json();
-      const categoriesData = await categoriesRes.json();
-      const adminsData = await adminsRes.json();
-
-      setStats({
-        totalProducts: productsData.pagination?.total || 0,
-        totalCategories: categoriesData.categories?.length || 0,
-        totalAdmins: adminsData.pagination?.total || 0,
-      });
-    } catch (error) {
-      console.error("Error fetching stats:", error);
-    }
-  };
+  if (loading) return <div className="p-6">Loading dashboard...</div>;
+  if (error) return <div className="p-6 text-red-500">Error: {error}</div>;
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-4">Admin Dashboard</h1>
-      
-      <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="border p-4 rounded">
-          <h3 className="font-bold">Total Products</h3>
-          <p className="text-2xl">{stats.totalProducts}</p>
+    <div className="p-6">
+      <h1 className="text-2xl font-bold mb-6">Admin Dashboard</h1>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-white p-6 rounded-lg shadow-md border">
+          <h2 className="text-lg font-semibold mb-2">Total Products</h2>
+          <p className="text-3xl font-bold text-blue-600">{stats.products}</p>
         </div>
-        <div className="border p-4 rounded">
-          <h3 className="font-bold">Total Categories</h3>
-          <p className="text-2xl">{stats.totalCategories}</p>
+        <div className="bg-white p-6 rounded-lg shadow-md border">
+          <h2 className="text-lg font-semibold mb-2">Total Categories</h2>
+          <p className="text-3xl font-bold text-green-600">{stats.categories}</p>
         </div>
-        <div className="border p-4 rounded">
-          <h3 className="font-bold">Total Admins</h3>
-          <p className="text-2xl">{stats.totalAdmins}</p>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div className="border p-4 rounded">
-          <h3 className="font-bold mb-2">Quick Actions</h3>
-          <div className="flex flex-col gap-2">
-            <button 
-              onClick={() => window.location.href = "/admin/products/add"}
-              className="bg-blue-500 text-white p-2 rounded"
-            >
-              Add New Product
-            </button>
-            <button 
-              onClick={() => window.location.href = "/admin/categories/add"}
-              className="bg-green-500 text-white p-2 rounded"
-            >
-              Add New Category
-            </button>
-            <button 
-              onClick={() => window.location.href = "/admin/admins/add"}
-              className="bg-purple-500 text-white p-2 rounded"
-            >
-              Add New Admin
-            </button>
-          </div>
+        <div className="bg-white p-6 rounded-lg shadow-md border">
+          <h2 className="text-lg font-semibold mb-2">Total Admins</h2>
+          <p className="text-3xl font-bold text-purple-600">{stats.admins}</p>
         </div>
       </div>
     </div>
