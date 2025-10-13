@@ -11,7 +11,6 @@ export async function GET() {
         *,
         products:products(count)
       `)
-      .eq("is_active", true) // Only active categories for public
       .order("name", { ascending: true });
 
     if (error) {
@@ -27,7 +26,6 @@ export async function GET() {
       name: category.name,
       slug: category.slug,
       description: category.description,
-      is_active: category.is_active,
       product_count: category.products?.[0]?.count || 0,
     }));
 

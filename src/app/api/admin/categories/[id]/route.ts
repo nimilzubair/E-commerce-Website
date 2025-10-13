@@ -50,7 +50,7 @@ export async function PUT(
 ) {
   try {
     const { id } = await params;
-    const { name, description } = await req.json();
+    const { name, description, is_active } = await req.json(); // Add is_active back
 
     // Validation
     if (!name || !name.trim()) {
@@ -84,15 +84,21 @@ export async function PUT(
     }
 
     // Update category
+    const updateData: any = {
+      name: name.trim(),
+      slug,
+      description: description?.trim() || null,
+      updated_at: new Date().toISOString(),
+    };
+
+    // Only include is_active if provided
+    if (is_active !== undefined) {
+      updateData.is_active = is_active;
+    }
+
     const { data: category, error } = await supabaseServer
       .from("categories")
-      .update({
-        name: name.trim(),
-        slug,
-        description: description?.trim() || null,
-        is_active,
-        updated_at: new Date().toISOString(),
-      })
+      .update(updateData)
       .eq("id", id)
       .select()
       .single();
@@ -120,7 +126,7 @@ export async function PUT(
   }
 }
 
-// DELETE category
+// DELETE category - Keep existing implementation
 export async function DELETE(
   req: Request,
   { params }: { params: Promise<{ id: string }> }

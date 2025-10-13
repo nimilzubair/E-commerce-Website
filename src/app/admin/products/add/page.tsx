@@ -65,7 +65,7 @@ export default function AddProductPage() {
     submitData.append("price", formData.price);
     submitData.append("discount", formData.discount);
     submitData.append("quantity", formData.quantity);
-    submitData.append("category", formData.category);
+    submitData.append("category_id", formData.category);
     submitData.append("file", selectedFile);
 
     // Log FormData contents for debugging
@@ -175,19 +175,20 @@ export default function AddProductPage() {
 
           <div>
             <label className="block font-bold mb-1">Category</label>
+            {/* // In AddProductPage component, change the select option value */}
             <select
-              name="category"
-              value={formData.category}
-              onChange={handleChange}
-              required
-              className="border p-2 rounded w-full"
+            name="category"
+            value={formData.category}
+            onChange={handleChange}
+            required
+            className="border p-2 rounded w-full"
             >
-              <option value="">Select Category</option>
-              {categories.map((category: any) => (
-                <option key={category.id} value={category.slug}>
-                  {category.name} (Slug: {category.slug})
+            <option value="">Select Category</option>
+            {categories.map((category: any) => (
+                <option key={category.id} value={category.id}> {/* Change from slug to id */}
+                {category.name}
                 </option>
-              ))}
+            ))}
             </select>
           </div>
 

@@ -154,6 +154,7 @@ export async function DELETE(req: Request) {
 }
 
 // Bulk restock products
+// app/api/admin/products/bulk/route.ts - Update the POST function
 export async function POST(req: Request) {
   try {
     const { productIds, quantity } = await req.json();
@@ -196,6 +197,22 @@ export async function POST(req: Request) {
         { error: "Failed to restock products" }, 
         { status: 500 }
       );
+    }
+
+    // Update inventory table for each product
+    const inventoryUpdates = productIds.map(productId => ({
+      variant_id: null, // Main product restock
+      quantity: quantity,
+      updated_at: new Date().toISOString()
+    }));
+
+    const { error: inventoryError } = await supabaseServer
+      .from("inventory")
+      .insert(inventoryUpdates);
+
+    if (inventoryError) {
+      console.error("Bulk inventory update error:", inventoryError);
+      // Don't fail the request, just log the error
     }
 
     return NextResponse.json({

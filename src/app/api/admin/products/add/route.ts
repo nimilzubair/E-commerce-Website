@@ -13,7 +13,7 @@ export async function POST(req: Request) {
     const price = Number(formData.get("price"));
     const discount = Number(formData.get("discount")) || 0;
     const quantity = Number(formData.get("quantity")) || 0;
-    const categorySlug = formData.get("category") as string;
+    const categoryId = formData.get("category_id") as string; // ← Changed from categorySlug to categoryId
     const file = formData.get("file") as File;
 
     // Optional variants
@@ -22,8 +22,8 @@ export async function POST(req: Request) {
       ? JSON.parse(variantsStr)
       : [];
 
-    // Validation
-    if (!name || !price || !categorySlug) {
+    // Validation - UPDATE THIS SECTION
+    if (!name || !price || !categoryId) { // ← Changed from categorySlug to categoryId
       return NextResponse.json(
         { error: "Name, price, and category are required" }, 
         { status: 400 }
@@ -44,11 +44,11 @@ export async function POST(req: Request) {
       );
     }
 
-    // Get category with validation - REMOVED is_active check
+    // Get category with validation - UPDATE THIS SECTION
     const { data: category, error: catErr } = await supabaseServer
       .from("categories")
-      .select("id, name, slug") // Removed is_active since column doesn't exist
-      .eq("slug", categorySlug)
+      .select("id, name, slug, is_active")
+      .eq("id", categoryId) // ← Changed from slug to id
       .single();
 
     if (catErr || !category) {
@@ -59,13 +59,13 @@ export async function POST(req: Request) {
       );
     }
 
-    // REMOVED the is_active check since the column doesn't exist
-    // if (!category.is_active) {
-    //   return NextResponse.json(
-    //     { error: "Selected category is not active" }, 
-    //     { status: 400 }
-    //   );
-    // }
+    // Check if category is active
+    if (!category.is_active) {
+      return NextResponse.json(
+        { error: "Selected category is not active" }, 
+        { status: 400 }
+      );
+    }
 
     // Check if product name already exists in same category
     const { data: existingProduct } = await supabaseServer
@@ -126,11 +126,11 @@ export async function POST(req: Request) {
       }
     }
 
-    // Upload image
+    // Upload image - UPDATE THIS SECTION
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
     const fileName = `${Date.now()}-${file.name.replace(/\s+/g, '-')}`;
-    const filePath = `${categorySlug}/${fileName}`;
+    const filePath = `${category.slug}/${fileName}`; // ← Use category.slug from the fetched category
 
     const { error: uploadErr } = await supabaseServer.storage
       .from("product-images")

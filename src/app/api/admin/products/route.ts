@@ -1,3 +1,4 @@
+// app/api/admin/products/route.ts
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
 
@@ -24,7 +25,6 @@ export async function GET(request: Request) {
           id,
           name, 
           slug
-          // Remove is_active since column doesn't exist
         ),
         product_variants(
           id,

@@ -45,21 +45,26 @@ export default function ProductsPage() {
   };
 
   const toggleAvailability = async (id: string, currentStatus: boolean) => {
-    try {
-      const res = await fetch(`/api/admin/products/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ is_available: !currentStatus }),
-      });
-      
-      if (res.ok) {
-        alert("Product updated successfully");
-        fetchProducts();
-      }
-    } catch (error) {
-      console.error("Error updating product:", error);
+  try {
+    const res = await fetch(`/api/admin/products/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ is_available: !currentStatus }),
+    });
+    
+    const data = await res.json();
+    
+    if (res.ok) {
+      alert("Product availability updated successfully");
+      fetchProducts();
+    } else {
+      alert(`Error: ${data.error}`);
     }
-  };
+  } catch (error) {
+    console.error("Error updating product:", error);
+    alert("Failed to update product availability");
+  }
+};
 
   if (loading) return <p>Loading products...</p>;
 

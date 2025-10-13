@@ -39,7 +39,7 @@ export async function GET(
   }
 }
 
-// UPDATE product
+// UPDATE product - FIX THIS FUNCTION
 export async function PUT(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -48,6 +48,8 @@ export async function PUT(
     const { id } = await params;
     const body = await req.json();
 
+    console.log("Update product request:", { id, body }); // Debug log
+
     const { 
       name, 
       description, 
@@ -55,29 +57,36 @@ export async function PUT(
       discount, 
       quantity, 
       category_id, 
-      is_available 
+      is_available,
+      is_active 
     } = body;
 
-    // Validation
-    if (!name || !price || !category_id) {
+    // Build update data dynamically
+    const updateData: any = {
+      updated_at: new Date().toISOString(),
+    };
+
+    // Only include fields that are provided
+    if (name !== undefined) updateData.name = name;
+    if (description !== undefined) updateData.description = description;
+    if (price !== undefined) updateData.price = price;
+    if (discount !== undefined) updateData.discount = discount || 0;
+    if (quantity !== undefined) updateData.quantity = quantity || 0;
+    if (category_id !== undefined) updateData.category_id = category_id;
+    if (is_available !== undefined) updateData.is_available = is_available;
+    if (is_active !== undefined) updateData.is_active = is_active;
+
+    // If only updating availability, don't require other fields
+    if (Object.keys(updateData).length === 1) { // only updated_at
       return NextResponse.json(
-        { error: "Name, price, and category are required" }, 
+        { error: "No valid fields to update" }, 
         { status: 400 }
       );
     }
 
     const { data: product, error } = await supabaseServer
       .from("products")
-      .update({
-        name,
-        description,
-        price,
-        discount: discount || 0,
-        quantity: quantity || 0,
-        category_id,
-        is_available: is_available !== undefined ? is_available : true,
-        updated_at: new Date().toISOString(),
-      })
+      .update(updateData)
       .eq("id", id)
       .select()
       .single();
@@ -85,7 +94,7 @@ export async function PUT(
     if (error) {
       console.error("Update product error:", error);
       return NextResponse.json(
-        { error: "Failed to update product" }, 
+        { error: `Failed to update product: ${error.message}` }, 
         { status: 500 }
       );
     }
@@ -105,7 +114,7 @@ export async function PUT(
   }
 }
 
-// DELETE product
+// DELETE product - Keep existing
 export async function DELETE(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -133,7 +142,7 @@ export async function DELETE(
       );
     }
 
-    // Delete images from storage (optional - can be handled separately)
+    // Delete images from storage
     if (images && images.length > 0) {
       const filePaths = images.map(img => {
         const url = new URL(img.image_url);
