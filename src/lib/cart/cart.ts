@@ -1,6 +1,6 @@
 import { supabaseServer } from "@/lib/supabase/server";
 
-// ✅ Update cart item quantity and manage stock
+// ✅ Update cart item quantity (without stock modification)
 export async function updateCartItemQuantity(
   cartItemId: string,
   quantity: number,
@@ -25,29 +25,19 @@ export async function updateCartItemQuantity(
 
   const cartItem = cartItemRes.data;
 
-  // Update product variant stock if quantity changed
-  const diff = quantity - cartItem.quantity;
+  // ✅ Stock validation (check but don't modify)
+  const variantRes = await supabaseServer
+    .from("product_variants")
+    .select("stock")
+    .eq("id", cartItem.product_variant_id)
+    .single();
 
-  if (diff !== 0) {
-    const variantRes = await supabaseServer
-      .from("product_variants")
-      .select("stock")
-      .eq("id", cartItem.product_variant_id)
-      .single();
+  if (variantRes.error || !variantRes.data) {
+    throw new Error("Product variant not found");
+  }
 
-    if (variantRes.error || !variantRes.data) {
-      throw new Error("Product variant not found for stock update");
-    }
-
-    const newStock = (variantRes.data.stock ?? 0) - diff;
-    if (newStock < 0) {
-      throw new Error("Not enough stock available");
-    }
-
-    await supabaseServer
-      .from("product_variants")
-      .update({ stock: newStock })
-      .eq("id", cartItem.product_variant_id);
+  if (variantRes.data.stock < quantity) {
+    throw new Error(`Only ${variantRes.data.stock} items available in stock`);
   }
 
   // Update cart item quantity
@@ -65,9 +55,9 @@ export async function updateCartItemQuantity(
   return updateRes.data;
 }
 
-// ✅ Remove cart item and adjust stock
+// ✅ Remove cart item (without stock modification)
 export async function removeCartItem(cartItemId: string) {
-  // Get cart item and variant info
+  // Get cart item
   const { data: cartItem, error: cartItemError } = await supabaseServer
     .from("cart_items")
     .select("id, quantity, product_variant_id")
@@ -78,23 +68,7 @@ export async function removeCartItem(cartItemId: string) {
     throw new Error("Cart item not found");
   }
 
-  // Update stock
-  const { data: variant, error: variantError } = await supabaseServer
-    .from("product_variants")
-    .select("stock")
-    .eq("id", cartItem.product_variant_id)
-    .maybeSingle();
-
-  if (variantError || !variant) {
-    throw new Error("Product variant not found for stock update");
-  }
-
-  await supabaseServer
-    .from("product_variants")
-    .update({ stock: (variant.stock ?? 0) + cartItem.quantity })
-    .eq("id", cartItem.product_variant_id);
-
-  // Delete cart item
+  // Delete cart item (no stock modification needed)
   const { error: deleteError } = await supabaseServer
     .from("cart_items")
     .delete()

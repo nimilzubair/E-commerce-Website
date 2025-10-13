@@ -1,8 +1,7 @@
-// file: app/api/cart/route.ts
+// app/api/cart/route.ts
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { supabaseServer } from "@/lib/supabase/server";
-import { updateCartItemQuantity } from "@/lib/cart/cart";
 
 // =========================
 // GET: Get current user's cart and items
@@ -21,7 +20,7 @@ export async function GET() {
 
     if (!cart) return NextResponse.json({ cartId: null, items: [] });
 
-    // Get cart items with product variant and product info
+    // Get cart items with product variant and product info + images
     const { data: items, error: itemsError } = await supabaseServer
       .from("cart_items")
       .select(`
@@ -32,11 +31,16 @@ export async function GET() {
           id,
           size,
           color,
+          stock,
           product:products!inner(
             id,
             name,
             price,
-            discount
+            discount,
+            product_images(
+              image_url,
+              is_primary
+            )
           )
         )
       `)
@@ -44,15 +48,29 @@ export async function GET() {
 
     if (itemsError) throw itemsError;
 
-    // calculate discounted price for safety
+    // Format cart items with calculated prices and images
     const cartItems = (items || []).map((item: any) => {
       const product = Array.isArray(item.product_variant.product)
         ? item.product_variant.product[0]
         : item.product_variant.product;
-      const discount = product?.discount ?? 0;
+
       return {
-        ...item,
-        unit_price: +(product.price * (1 - discount / 100)).toFixed(2),
+        id: item.id,
+        quantity: item.quantity,
+        unit_price: item.unit_price,
+        product_variant: {
+          id: item.product_variant.id,
+          size: item.product_variant.size,
+          color: item.product_variant.color,
+          stock: item.product_variant.stock,
+          product: {
+            id: product.id,
+            name: product.name,
+            price: product.price,
+            discount: product.discount,
+            product_images: product.product_images || []
+          }
+        }
       };
     });
 
@@ -64,7 +82,7 @@ export async function GET() {
 }
 
 // =========================
-// POST: Add item to cart
+// POST: Add item to cart (NO STOCK MODIFICATION)
 // =========================
 export async function POST(req: Request) {
   try {
@@ -72,38 +90,42 @@ export async function POST(req: Request) {
     if (!userId) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
 
     const { productVariantId, quantity } = await req.json();
-    if (!productVariantId || !quantity) return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    if (!productVariantId || !quantity) {
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    }
 
-    // Fetch variant and product info
+    // Check available stock (READ ONLY - no modification)
     const { data: variant, error: variantError } = await supabaseServer
       .from("product_variants")
       .select(`
         id,
+        stock,
         size,
         color,
-        stock,
-        product:products!inner(
+        product:products(
           id,
           name,
           price,
           discount,
-          is_available
+          product_images(
+            image_url,
+            is_primary
+          )
         )
       `)
       .eq("id", productVariantId)
-      .maybeSingle();
+      .single();
 
-    if (variantError || !variant) return NextResponse.json({ error: "Product variant not found" }, { status: 404 });
+    if (variantError || !variant) {
+      return NextResponse.json({ error: "Product variant not found" }, { status: 404 });
+    }
 
-    const productObj = Array.isArray(variant.product) ? variant.product[0] : variant.product;
-    const productPrice = productObj?.price ?? 0;
-    const discount = productObj?.discount ?? 0;
-
-    // calculate discounted price
-    const discountedPrice = +(productPrice * (1 - discount / 100)).toFixed(2);
-
-    if ((variant.stock ?? 0) < quantity) {
-      return NextResponse.json({ error: `Insufficient stock. Only ${variant.stock ?? 0} items available` }, { status: 400 });
+    // Check if requested quantity is available
+    if (variant.stock < quantity) {
+      return NextResponse.json(
+        { error: `Only ${variant.stock} items available in stock` }, 
+        { status: 400 }
+      );
     }
 
     // Get or create user's cart
@@ -124,7 +146,7 @@ export async function POST(req: Request) {
       cart = newCart;
     }
 
-    // Check if variant exists in cart
+    // Check if same variant already in cart
     const { data: existingItem } = await supabaseServer
       .from("cart_items")
       .select("id, quantity")
@@ -132,38 +154,64 @@ export async function POST(req: Request) {
       .eq("product_variant_id", productVariantId)
       .maybeSingle();
 
+    // Calculate unit price
+    const product = Array.isArray(variant.product) ? variant.product[0] : variant.product;
+    const discount = product?.discount ?? 0;
+    const unitPrice = +(product.price * (1 - discount / 100)).toFixed(2);
+
     let result;
+    let finalQuantity = quantity;
+
     if (existingItem) {
-      // Update quantity using helper
-      const updatedItem = await updateCartItemQuantity(existingItem.id, existingItem.quantity + quantity, userId);
-      updatedItem.product_variant = variant;
-      updatedItem.unit_price = discountedPrice; // always ensure discounted price
-      result = { message: "Item quantity updated in cart", cartItem: updatedItem, action: "updated" };
+      // Update quantity - calculate total requested quantity
+      finalQuantity = existingItem.quantity + quantity;
+      
+      // Check if new total quantity exceeds stock
+      if (finalQuantity > variant.stock) {
+        return NextResponse.json(
+          { error: `Cannot add more. Only ${variant.stock} items available in stock` }, 
+          { status: 400 }
+        );
+      }
+
+      const { data: updatedItem, error: updateError } = await supabaseServer
+        .from("cart_items")
+        .update({ 
+          quantity: finalQuantity, 
+          unit_price: unitPrice 
+        })
+        .eq("id", existingItem.id)
+        .select()
+        .single();
+
+      if (updateError) throw updateError;
+      result = { 
+        message: "Item quantity updated in cart", 
+        cartItem: updatedItem, 
+        action: "updated" 
+      };
     } else {
-      // Insert new cart item with discounted price
+      // Add new item to cart
       const { data: cartItem, error: insertError } = await supabaseServer
         .from("cart_items")
         .insert([{
           cart_id: cart.id,
           product_variant_id: productVariantId,
           quantity,
-          unit_price: discountedPrice // store discounted price
+          unit_price: unitPrice
         }])
         .select()
         .single();
 
-      if (insertError || !cartItem) throw insertError;
-
-      // Decrement stock
-      await supabaseServer
-        .from("product_variants")
-        .update({ stock: (variant.stock ?? 0) - quantity })
-        .eq("id", productVariantId);
-
-      cartItem.product_variant = variant;
-      result = { message: "Item added to cart", cartItem, action: "added" };
+      if (insertError) throw insertError;
+      result = { 
+        message: "Item added to cart", 
+        cartItem, 
+        action: "added" 
+      };
     }
 
+    // NO STOCK MODIFICATION - Stock remains unchanged
     return NextResponse.json(result);
   } catch (err: any) {
     console.error("Cart POST error:", err);

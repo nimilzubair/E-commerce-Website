@@ -1,17 +1,18 @@
-import './globals.css'
-import { ReactNode } from 'react'
-import { CartProvider } from '@/context/CartContext';
+import { CartProvider } from "@/context/CartContext";
+import Navigation from "@/components/Navigation";
 
-export const metadata = {
-  title: 'E-commerce Website',
-  description: 'Shop the best collections online',
-}
-
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="en">
       <body>
-        <CartProvider>{children}</CartProvider>
+        <CartProvider>
+          <Navigation />
+          {children}
+        </CartProvider>
       </body>
     </html>
   );

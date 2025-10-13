@@ -19,25 +19,32 @@ export default function ShopAllPage() {
   const fetchProducts = async () => {
     try {
       setLoading(true);
+      setError("");
+      
       const res = await fetch("/api/products");
       
-      if (res.ok) {
-        const data = await res.json();
-        setProducts(data);
-        setError("");
-      } else {
-        setError("Failed to load products");
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
       }
-    } catch (err) {
-      setError("Network error - failed to load products");
+      
+      const data = await res.json();
+      
+      if (Array.isArray(data)) {
+        setProducts(data);
+      } else {
+        console.error("Unexpected response format:", data);
+        setProducts([]);
+      }
+    } catch (err: any) {
       console.error("Error loading products:", err);
+      setError(err.message || "Failed to load products");
+      setProducts([]);
     } finally {
       setLoading(false);
     }
   };
 
   const addToCart = async (productVariantId: string, productName: string) => {
-  console.log('Adding to cart, productVariantId:', productVariantId);
     try {
       // Check authentication
       const authRes = await fetch("/api/auth/currentcookie");
@@ -73,21 +80,23 @@ export default function ShopAllPage() {
 
   if (loading) {
     return (
-      <div className="p-6">
-        <h1 className="text-2xl font-semibold mb-4">🛍️ Shop All Products</h1>
-        <p>Loading products...</p>
+      <div className="min-h-screen bg-black p-6">
+        <h1 className="text-3xl font-bold text-gold-400 mb-8">🛍️ Shop All Products</h1>
+        <div className="flex justify-center items-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gold-500"></div>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="p-6">
-        <h1 className="text-2xl font-semibold mb-4">🛍️ Shop All Products</h1>
-        <p>Error: {error}</p>
+      <div className="min-h-screen bg-black p-6">
+        <h1 className="text-3xl font-bold text-gold-400 mb-8">🛍️ Shop All Products</h1>
+        <p className="text-red-400">Error: {error}</p>
         <button 
           onClick={fetchProducts}
-          className="mt-4 border px-4 py-2"
+          className="mt-4 border border-gold-500 text-gold-300 px-6 py-2 rounded-lg hover:bg-gold-500 hover:text-black transition-colors"
         >
           Retry
         </button>
@@ -96,23 +105,25 @@ export default function ShopAllPage() {
   }
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-semibold mb-4">🛍️ Shop All Products</h1>
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-        {products.map((product) => (
-          <ProductCard 
-            key={product.id} 
-            product={product} 
-            onAddToCart={addToCart}
-          />
-        ))}
-      </div>
-      
-      {products.length === 0 && (
-        <div className="text-center mt-8">
-          <p>No products found</p>
+    <div className="min-h-screen bg-black p-6">
+      <div className="max-w-7xl mx-auto">
+        <h1 className="text-3xl font-bold text-gold-400 mb-8">🛍️ Shop All Products</h1>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {products.map((product) => (
+            <ProductCard 
+              key={product.id} 
+              product={product} 
+              onAddToCart={addToCart}
+            />
+          ))}
         </div>
-      )}
+        
+        {products.length === 0 && !loading && (
+          <div className="text-center py-12">
+            <p className="text-gray-400 text-lg">No products found</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
