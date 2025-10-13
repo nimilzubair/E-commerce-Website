@@ -16,11 +16,18 @@ export async function POST(req: Request) {
     const categoryId = formData.get("category_id") as string; // ← Changed from categorySlug to categoryId
     const file = formData.get("file") as File;
 
-    // Optional variants
+
+    // Optional variants (product cannot be added without variants)
     const variantsStr = formData.get("variants") as string;
     const variants: { size?: string; color?: string; stock: number }[] = variantsStr
       ? JSON.parse(variantsStr)
       : [];
+    if (!variants.length) {
+      return NextResponse.json(
+        { error: "At least one variant is required" },
+        { status: 400 }
+      );
+    }
 
     // Validation - UPDATE THIS SECTION
     if (!name || !price || !categoryId) { // ← Changed from categorySlug to categoryId
@@ -82,12 +89,10 @@ export async function POST(req: Request) {
       );
     }
 
-    // Calculate availability
-    const totalStock = variants.length > 0 
-      ? variants.reduce((sum, v) => sum + v.stock, 0)
-      : quantity;
+    // Calculate total stock from variants
+    const totalStock = variants.reduce((sum, v) => sum + v.stock, 0);
 
-    // Insert product
+    // Insert product with quantity as totalStock
     const { data: product, error: prodErr } = await supabaseServer
       .from("products")
       .insert([{
@@ -96,7 +101,7 @@ export async function POST(req: Request) {
         description: description.trim(),
         price,
         discount,
-        quantity: variants.length > 0 ? 0 : quantity,
+        quantity: totalStock,
         is_available: totalStock > 0,
       }])
       .select()

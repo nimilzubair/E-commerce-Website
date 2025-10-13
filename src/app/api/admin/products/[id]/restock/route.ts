@@ -38,20 +38,6 @@ export async function PUT(
         );
       }
 
-      // Update inventory table for variant
-      const { error: inventoryError } = await supabaseServer
-        .from("inventory")
-        .insert([{
-          variant_id: variantId,
-          quantity: quantity,
-          updated_at: new Date().toISOString()
-        }]);
-
-      if (inventoryError) {
-        console.error("Inventory update error:", inventoryError);
-        // Don't fail the request, just log the error
-      }
-
       // Update product availability based on variants
       const { data: variants } = await supabaseServer
         .from("product_variants")
@@ -92,20 +78,6 @@ export async function PUT(
           { error: "Failed to restock product" }, 
           { status: 500 }
         );
-      }
-
-      // Update inventory table for main product (variant_id will be null)
-      const { error: inventoryError } = await supabaseServer
-        .from("inventory")
-        .insert([{
-          variant_id: null, // Main product restock
-          quantity: quantity,
-          updated_at: new Date().toISOString()
-        }]);
-
-      if (inventoryError) {
-        console.error("Inventory update error:", inventoryError);
-        // Don't fail the request, just log the error
       }
 
       return NextResponse.json({

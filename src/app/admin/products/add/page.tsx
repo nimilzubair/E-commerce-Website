@@ -14,9 +14,13 @@ export default function AddProductPage() {
     description: "",
     price: "",
     discount: "0",
-    quantity: "0",
     category: "",
   });
+
+  // Variants state: array of { size, stock }
+  const [variants, setVariants] = useState([
+    { size: "", stock: "" }
+  ]);
 
   useEffect(() => {
     fetchCategories();
@@ -64,7 +68,11 @@ export default function AddProductPage() {
     submitData.append("description", formData.description);
     submitData.append("price", formData.price);
     submitData.append("discount", formData.discount);
-    submitData.append("quantity", formData.quantity);
+    // Remove quantity, add variants as JSON string
+    submitData.append("variants", JSON.stringify(
+      variants.filter(v => v.size && v.stock && !isNaN(Number(v.stock)))
+        .map(v => ({ size: v.size, stock: Number(v.stock) }))
+    ));
     submitData.append("category_id", formData.category);
     submitData.append("file", selectedFile);
 
@@ -106,7 +114,6 @@ export default function AddProductPage() {
   return (
     <div>
       <h1 className="text-2xl font-bold mb-4">Add New Product</h1>
-      
       <form onSubmit={handleSubmit} className="max-w-2xl">
         <div className="space-y-4">
           <div>
@@ -161,16 +168,54 @@ export default function AddProductPage() {
             </div>
           </div>
 
+          {/* Variants section */}
           <div>
-            <label className="block font-bold mb-1">Quantity</label>
-            <input
-              type="number"
-              name="quantity"
-              value={formData.quantity}
-              onChange={handleChange}
-              className="border p-2 rounded w-full"
-              min="0"
-            />
+            <label className="block font-bold mb-1">Variants (Size & Quantity)</label>
+            {variants.map((variant, idx) => (
+              <div key={idx} className="flex gap-2 mb-2">
+                <input
+                  type="text"
+                  placeholder="Size (e.g. XS, S, M, L)"
+                  value={variant.size}
+                  onChange={e => {
+                    const newVariants = [...variants];
+                    newVariants[idx].size = e.target.value;
+                    setVariants(newVariants);
+                  }}
+                  className="border p-2 rounded w-1/2"
+                  required
+                />
+                <input
+                  type="number"
+                  placeholder="Quantity"
+                  value={variant.stock}
+                  min="0"
+                  onChange={e => {
+                    const newVariants = [...variants];
+                    newVariants[idx].stock = e.target.value;
+                    setVariants(newVariants);
+                  }}
+                  className="border p-2 rounded w-1/2"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setVariants(variants.filter((_, i) => i !== idx))}
+                  className="bg-red-500 text-white px-2 rounded"
+                  disabled={variants.length === 1}
+                  title="Remove variant"
+                >
+                  &times;
+                </button>
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={() => setVariants([...variants, { size: "", stock: "" }])}
+              className="bg-green-500 text-white px-3 py-1 rounded mt-1"
+            >
+              + Add Variant
+            </button>
           </div>
 
           <div>

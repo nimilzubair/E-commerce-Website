@@ -174,7 +174,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // Update products
+    // Update products table only (remove inventory table usage)
     const { data: updatedProducts, error } = await supabaseServer
       .from("products")
       .update({ 
@@ -197,22 +197,6 @@ export async function POST(req: Request) {
         { error: "Failed to restock products" }, 
         { status: 500 }
       );
-    }
-
-    // Update inventory table for each product
-    const inventoryUpdates = productIds.map(productId => ({
-      variant_id: null, // Main product restock
-      quantity: quantity,
-      updated_at: new Date().toISOString()
-    }));
-
-    const { error: inventoryError } = await supabaseServer
-      .from("inventory")
-      .insert(inventoryUpdates);
-
-    if (inventoryError) {
-      console.error("Bulk inventory update error:", inventoryError);
-      // Don't fail the request, just log the error
     }
 
     return NextResponse.json({
