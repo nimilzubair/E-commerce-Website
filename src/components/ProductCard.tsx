@@ -12,7 +12,6 @@ interface ProductCardProps {
 export default function ProductCard({ product, onAddToCart }: ProductCardProps) {
   const [selectedSize, setSelectedSize] = useState<string>("");
   const [selectedColor, setSelectedColor] = useState<string>("");
-  const [imageLoading, setImageLoading] = useState(true);
 
   const variants = product?.product_variants ?? [];
   const discount = product?.discount ?? 0;
@@ -35,151 +34,127 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
   const primaryImage =
     product?.product_images?.find(img => img.is_primary)?.image_url ||
     product?.product_images?.[0]?.image_url ||
-    "/placeholder.svg";
+    "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Crect width='400' height='400' fill='%23f3f4f6'/%3E%3Ctext x='50%' y='50%' font-size='16' fill='%239ca3af' text-anchor='middle' dominant-baseline='middle' font-family='Arial'%3EImage unavailable%3C/text%3E%3C/svg%3E";
 
   const finalPrice = discount > 0 ? price * (1 - discount / 100) : price;
 
   const handleAddToCart = () => {
     if (!selectedVariant) {
-      alert("Please select a valid variant");
+      alert("Please select a variant");
       return;
     }
     if ((selectedVariant.stock ?? 0) < 1) {
-      alert("This variant is out of stock");
+      alert("Out of stock");
       return;
     }
     onAddToCart(selectedVariant.id, product.name);
   };
 
+  const isOutOfStock = (selectedVariant?.stock ?? 0) < 1;
+
   return (
-    <div className="group bg-black border-2 border-gold-500 rounded-xl overflow-hidden shadow-2xl shadow-gold-900/20 hover:shadow-gold-500/30 transition-all duration-500 hover:scale-105 hover:border-gold-300 flex flex-col w-full max-w-xs mx-auto">
-      {/* Image Container - Fixed size */}
-      <div className="relative w-full h-64 bg-gradient-to-br from-gray-900 to-black overflow-hidden flex-shrink-0">
+    <div className="group bg-white border border-gray-200 rounded-lg overflow-hidden hover:border-gold-400 transition-all duration-300 flex flex-col h-full">
+      {/* Image Container */}
+      <div className="relative w-full h-72 bg-gray-100 overflow-hidden">
         <Image
           src={primaryImage}
           alt={product.name}
           width={400}
           height={400}
-          className="w-full h-full object-cover object-center transition-all duration-700 group-hover:scale-110"
-          onLoad={() => setImageLoading(false)}
+          className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
+          priority={false}
         />
-        
-        {/* Golden Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity duration-500 pointer-events-none" />
         
         {/* Discount Badge */}
         {discount > 0 && (
-          <div className="absolute top-3 left-3 z-10">
-            <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 text-black font-bold px-3 py-1 rounded-full shadow-lg text-sm">
-              -{discount}% OFF
-            </div>
+          <div className="absolute top-4 left-4 bg-gold-500 text-black px-3 py-1 rounded-full text-sm font-bold">
+            -{discount}%
           </div>
         )}
 
         {/* Stock Status */}
-        <div className="absolute top-3 right-3 z-10">
-          <div className={`px-3 py-1 rounded-full text-xs font-bold ${
-            (selectedVariant?.stock ?? product.quantity ?? 0) > 0 
-              ? 'bg-green-900/80 text-green-300 border border-green-500' 
-              : 'bg-red-900/80 text-red-300 border border-red-500'
+        <div className="absolute top-4 right-4">
+          <span className={`text-xs font-bold px-2 py-1 rounded ${
+            isOutOfStock
+              ? 'bg-gray-300 text-gray-700'
+              : 'bg-black text-white'
           }`}>
-            {(selectedVariant?.stock ?? product.quantity ?? 0) > 0 ? 'IN STOCK' : 'OUT'}
-          </div>
-        </div>
-
-        {/* Quick View Overlay */}
-        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-black/60 z-20">
-          <button className="bg-gold-500 text-black font-bold px-4 py-2 rounded-lg hover:bg-gold-400 transition-all">
-            Quick View
-          </button>
+            {isOutOfStock ? 'Out' : 'In Stock'}
+          </span>
         </div>
       </div>
 
       {/* Content Section */}
-      <div className="p-4 bg-gradient-to-b from-gray-900 to-black flex flex-col flex-grow">
-        {/* Product Title */}
-        <h3 className="text-lg font-bold text-gold-400 mb-1 tracking-wide group-hover:text-gold-300 transition-colors duration-300 line-clamp-2">
+      <div className="p-5 flex flex-col flex-grow">
+        {/* Title */}
+        <h3 className="text-lg font-semibold text-black mb-2 line-clamp-2">
           {product.name}
         </h3>
         
-        {/* Product Description */}
-        <p className="text-gray-400 text-xs mb-3 line-clamp-2 leading-relaxed">
-          {product.description || "Premium quality product"}
+        {/* Description */}
+        <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+          {product.description || "Premium quality"}
         </p>
 
-        {/* Variant Selection */}
+        {/* Variants */}
         {(sizes.length > 0 || colors.length > 0) && (
-          <div className="space-y-2 mb-3 p-3 bg-gray-900/50 rounded-lg border border-gold-500/20">
+          <div className="space-y-2 mb-4">
             {sizes.length > 0 && (
-              <div className="flex items-center justify-between gap-2">
-                <label className="text-gold-300 font-medium text-xs">Size:</label>
-                <select
-                  value={selectedSize}
-                  onChange={e => setSelectedSize(e.target.value)}
-                  className="bg-black border border-gold-600 rounded px-2 py-1 text-gold-100 text-xs focus:ring-2 focus:ring-gold-500"
-                >
-                  <option value="">Choose</option>
-                  {sizes.map(size => (
-                    <option key={size} value={size}>
-                      {size}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <select
+                value={selectedSize}
+                onChange={e => setSelectedSize(e.target.value)}
+                className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-gold-400"
+              >
+                <option value="">Select Size</option>
+                {sizes.map(size => (
+                  <option key={size} value={size}>
+                    {size}
+                  </option>
+                ))}
+              </select>
             )}
 
             {colors.length > 0 && (
-              <div className="flex items-center justify-between gap-2">
-                <label className="text-gold-300 font-medium text-xs">Color:</label>
-                <select
-                  value={selectedColor}
-                  onChange={e => setSelectedColor(e.target.value)}
-                  className="bg-black border border-gold-600 rounded px-2 py-1 text-gold-100 text-xs focus:ring-2 focus:ring-gold-500"
-                >
-                  <option value="">Choose</option>
-                  {colors.map(color => (
-                    <option key={color} value={color}>
-                      {color}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <select
+                value={selectedColor}
+                onChange={e => setSelectedColor(e.target.value)}
+                className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-gold-400"
+              >
+                <option value="">Select Color</option>
+                {colors.map(color => (
+                  <option key={color} value={color}>
+                    {color}
+                  </option>
+                ))}
+              </select>
             )}
           </div>
         )}
 
-        {/* Price Section */}
-        <div className="flex items-center gap-2 mb-4 flex-wrap">
-          <span className="text-xl font-bold text-gold-400">
-            PKR {finalPrice.toFixed(2)}
+        {/* Price */}
+        <div className="flex items-baseline gap-2 mb-4">
+          <span className="text-xl font-bold text-black">
+            PKR {finalPrice.toFixed(0)}
           </span>
           {discount > 0 && (
-            <>
-              <span className="text-sm text-gray-500 line-through">
-                PKR {price.toFixed(2)}
-              </span>
-              <span className="text-xs bg-gold-900/30 text-gold-300 px-2 py-1 rounded border border-gold-500/30">
-                Save {discount}%
-              </span>
-            </>
+            <span className="text-sm text-gray-500 line-through">
+              PKR {price.toFixed(0)}
+            </span>
           )}
         </div>
 
         {/* Add to Cart Button */}
         <button
           onClick={handleAddToCart}
-          disabled={!selectedVariant || (selectedVariant.stock ?? 0) < 1}
-          className="w-full bg-gradient-to-r from-yellow-600 to-yellow-700 text-black font-bold py-3 rounded-lg hover:from-yellow-500 hover:to-yellow-600 disabled:from-gray-700 disabled:to-gray-800 disabled:text-gray-400 disabled:cursor-not-allowed transform hover:scale-105 active:scale-95 transition-all duration-300 shadow-lg shadow-yellow-900/30 text-sm"
+          disabled={isOutOfStock}
+          className={`w-full py-3 rounded font-semibold transition-all duration-300 ${
+            isOutOfStock
+              ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
+              : 'bg-black text-white hover:bg-gold-500 hover:text-black'
+          }`}
         >
-          {(selectedVariant?.stock ?? 0) < 1 ? "Out of Stock" : "Add to Cart"}
+          {isOutOfStock ? 'Out of Stock' : 'Add to Cart'}
         </button>
-
-        {/* Additional Info */}
-        <div className="mt-3 flex justify-between text-xs text-gray-500 gap-1">
-          <span>⭐ Premium</span>
-          <span>🚚 Free Ship</span>
-          <span>🔒 Secure</span>
-        </div>
       </div>
     </div>
   );

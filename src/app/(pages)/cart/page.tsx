@@ -146,13 +146,14 @@ export default function CartPage() {
                 <div key={item.id} className="border-b border-gold-500/30 last:border-b-0">
                   <div className="p-6 flex flex-col lg:flex-row items-center gap-6">
                     {/* Product Image */}
-                    <div className="relative w-24 h-24 lg:w-32 lg:h-32 flex-shrink-0 rounded-xl overflow-hidden border-2 border-gold-500/50">
+                    <div className="relative w-24 h-24 lg:w-32 lg:h-32 flex-shrink-0 rounded-xl overflow-hidden border-2 border-gold-500/50 bg-gradient-to-br from-gray-900 to-black">
                       <Image
                         src={imageUrl}
                         alt={product.name}
                         width={128}
                         height={128}
                         className="w-full h-full object-cover object-center"
+                        priority={false}
                       />
                     </div>
 

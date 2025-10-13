@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 type Customer = {
   id: string;
@@ -10,24 +11,21 @@ type Customer = {
   email: string;
 };
 
-export default function MainPage() {
+export default function HomePage() {
   const [userCount, setUserCount] = useState<number | null>(null);
   const [currentUser, setCurrentUser] = useState<Customer | null>(null);
   const router = useRouter();
 
-  // Fetch total customers count from Supabase
   useEffect(() => {
     const fetchUsers = async () => {
-      const { count, error } = await supabase
+      const { count } = await supabase
         .from("customers")
         .select("*", { count: "exact", head: true });
-
-      if (!error) setUserCount(count);
+      if (count) setUserCount(count);
     };
     fetchUsers();
   }, []);
 
-  // Fetch logged-in user from server using cookie
   useEffect(() => {
     const fetchCurrentUser = async () => {
       try {
@@ -41,7 +39,6 @@ export default function MainPage() {
     fetchCurrentUser();
   }, []);
 
-  // Sign out
   const handleSignOut = async () => {
     await fetch("/api/auth/signout", { method: "POST" });
     setCurrentUser(null);
@@ -49,34 +46,112 @@ export default function MainPage() {
   };
 
   return (
-    <main className="p-6 text-center min-h-screen flex flex-col items-center justify-center gap-6">
-      <h1 className="text-3xl font-bold">Supabase Connected 🎉</h1>
-      <p>Total customers in DB: {userCount ?? "Loading..."}</p>
-
-      {currentUser ? (
-        <div className="flex flex-col items-center gap-2 mt-4">
-          <p>
-            Logged in as: <span className="font-semibold">{currentUser.full_name}</span>
+    <div className="min-h-screen bg-white">
+      {/* Hero Section */}
+      <section className="bg-black text-white py-24 px-6">
+        <div className="max-w-7xl mx-auto text-center">
+          <h1 className="text-5xl md:text-6xl font-bold mb-6">
+            Timeless <span className="text-gold-400">Elegance</span>
+          </h1>
+          <p className="text-lg text-gray-300 mb-8 max-w-2xl mx-auto">
+            Discover our curated collection of premium clothing and accessories
           </p>
-          <p>Email: {currentUser.email}</p>
-          <button
-            onClick={handleSignOut}
-            className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 mt-2"
+          <Link
+            href="/shopall"
+            className="inline-block bg-gold-500 text-black px-8 py-3 rounded font-semibold hover:bg-gold-400 transition-colors"
           >
-            Sign Out
-          </button>
+            Explore Collection
+          </Link>
         </div>
-      ) : (
-        <div className="mt-4">
-          <p>No user is currently logged in.</p>
-          <button
-            onClick={() => router.push("/auth/login")}
-            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 mt-2"
-          >
-            Login
-          </button>
+      </section>
+
+      {/* Stats Section */}
+      <section className="py-16 px-6 bg-gray-50">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+          <div>
+            <div className="text-4xl font-bold text-gold-500 mb-2">
+              {userCount ?? "..."}
+            </div>
+            <p className="text-gray-700">Customers</p>
+          </div>
+          <div>
+            <div className="text-4xl font-bold text-gold-500 mb-2">100%</div>
+            <p className="text-gray-700">Premium Quality</p>
+          </div>
+          <div>
+            <div className="text-4xl font-bold text-gold-500 mb-2">24/7</div>
+            <p className="text-gray-700">Support</p>
+          </div>
         </div>
-      )}
-    </main>
+      </section>
+
+      {/* User Section */}
+      <section className="py-16 px-6">
+        <div className="max-w-7xl mx-auto">
+          {currentUser ? (
+            <div className="bg-gold-50 border-l-4 border-gold-500 p-8 rounded">
+              <p className="text-gray-800 mb-2">
+                Welcome, <span className="font-semibold">{currentUser.full_name}</span>
+              </p>
+              <p className="text-gray-600 text-sm mb-4">{currentUser.email}</p>
+              <button
+                onClick={handleSignOut}
+                className="bg-black text-white px-6 py-2 rounded hover:bg-gray-800 transition-colors font-medium"
+              >
+                Sign Out
+              </button>
+            </div>
+          ) : (
+            <div className="bg-gray-50 border border-gray-200 p-8 rounded text-center">
+              <p className="text-gray-700 mb-4">Start shopping today</p>
+              <Link
+                href="/auth/login"
+                className="inline-block bg-black text-white px-8 py-3 rounded hover:bg-gray-800 transition-colors font-medium"
+              >
+                Sign In
+              </Link>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="bg-black text-white py-12 px-6">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+          <div>
+            <h4 className="text-gold-400 font-semibold mb-4">Shop</h4>
+            <ul className="space-y-2 text-sm text-gray-300">
+              <li><Link href="/shopall" className="hover:text-gold-400">All Products</Link></li>
+              <li><Link href="/winter" className="hover:text-gold-400">Winter</Link></li>
+              <li><Link href="/summer" className="hover:text-gold-400">Summer</Link></li>
+            </ul>
+          </div>
+          <div>
+            <h4 className="text-gold-400 font-semibold mb-4">Collections</h4>
+            <ul className="space-y-2 text-sm text-gray-300">
+              <li><Link href="/dupatta" className="hover:text-gold-400">Dupattas</Link></li>
+              <li><Link href="/shawl" className="hover:text-gold-400">Shawls</Link></li>
+            </ul>
+          </div>
+          <div>
+            <h4 className="text-gold-400 font-semibold mb-4">Company</h4>
+            <ul className="space-y-2 text-sm text-gray-300">
+              <li><a href="#" className="hover:text-gold-400">About</a></li>
+              <li><a href="#" className="hover:text-gold-400">Contact</a></li>
+            </ul>
+          </div>
+          <div>
+            <h4 className="text-gold-400 font-semibold mb-4">Support</h4>
+            <ul className="space-y-2 text-sm text-gray-300">
+              <li><a href="#" className="hover:text-gold-400">FAQ</a></li>
+              <li><a href="#" className="hover:text-gold-400">Shipping</a></li>
+            </ul>
+          </div>
+        </div>
+        <div className="border-t border-gray-800 pt-8 text-center text-gray-400 text-sm">
+          <p>&copy; 2025 LUXE. All rights reserved.</p>
+        </div>
+      </footer>
+    </div>
   );
 }

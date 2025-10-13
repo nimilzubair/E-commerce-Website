@@ -56,7 +56,7 @@ export async function PUT(
 
     if (updateError) throw updateError;
 
-    // ❌ NO STOCK MODIFICATION - Stock remains unchanged
+    // NO STOCK MODIFICATION - Stock remains unchanged
     return NextResponse.json({ 
       message: "Cart item updated", 
       cartItem: updatedItem 
@@ -88,7 +88,7 @@ export async function DELETE(
       .delete()
       .eq("id", cartItemId);
 
-    // ❌ NO STOCK MODIFICATION - Stock remains unchanged
+    // NO STOCK MODIFICATION - Stock remains unchanged
     return NextResponse.json({ message: "Item removed from cart" });
   } catch (err: any) {
     console.error("Remove cart item error:", err);

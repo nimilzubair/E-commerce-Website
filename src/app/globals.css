@@ -1,0 +1,50 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom gold color palette */
+@layer components {
+  .gold-50 {
+    @apply bg-yellow-50;
+  }
+  .gold-100 {
+    @apply bg-yellow-100;
+  }
+  .gold-300 {
+    @apply bg-yellow-300;
+  }
+  .gold-400 {
+    @apply bg-yellow-400 text-yellow-400;
+  }
+  .gold-500 {
+    @apply bg-yellow-500 text-yellow-500;
+  }
+  .gold-600 {
+    @apply border-yellow-600 text-yellow-600;
+  }
+  .gold-900 {
+    @apply bg-yellow-900 text-yellow-900;
+  }
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Remove default button styles */
+button {
+  border: none;
+}
+
+/* Focus styles for accessibility */
+*:focus-visible {
+  outline: 2px solid #fbbf24;
+  outline-offset: 2px;
+}
+
+/* Ensure consistent font rendering */
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
