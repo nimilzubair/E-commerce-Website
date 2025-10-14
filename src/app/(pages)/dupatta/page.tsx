@@ -1,20 +1,50 @@
+// app/dupatta/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
 import { useCartContext } from "@/context/CartContext";
 import ProductCard from "@/components/ProductCard";
 import { Product } from "@/types/product";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
 
 export default function DupattaPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [currentUser, setCurrentUser] = useState(null);
+  const [cartItemCount, setCartItemCount] = useState(0);
 
   const { cartChanged, signalCartChange } = useCartContext();
 
   useEffect(() => {
     fetchProducts();
+    fetchCurrentUser();
+    fetchCartCount();
   }, [cartChanged]);
+
+  const fetchCurrentUser = async () => {
+    try {
+      const res = await fetch("/api/auth/currentcookie");
+      const data = await res.json();
+      setCurrentUser(data.user);
+    } catch (err) {
+      setCurrentUser(null);
+    }
+  };
+
+  const fetchCartCount = async () => {
+    try {
+      const res = await fetch('/api/cart');
+      if (res.ok) {
+        const data = await res.json();
+        const totalItems = data.items?.reduce((sum, item) => sum + item.quantity, 0) || 0;
+        setCartItemCount(totalItems);
+      }
+    } catch (error) {
+      console.error('Failed to fetch cart count:', error);
+    }
+  };
 
   const fetchProducts = async () => {
     try {
@@ -52,6 +82,7 @@ export default function DupattaPage() {
       if (res.ok) {
         alert(`Added ${productName} to cart!`);
         signalCartChange();
+        fetchCartCount();
       } else {
         alert(data.error || "Failed to add to cart");
       }
@@ -63,46 +94,62 @@ export default function DupattaPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black p-6">
-        <h1 className="text-3xl font-bold text-gold-400 mb-8">🧣 Dupatta Collection</h1>
-        <div className="flex justify-center items-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gold-500"></div>
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto mb-4"></div>
+          <p className="text-gray-300">Loading dupatta collection...</p>
         </div>
       </div>
     );
   }
 
-  if (error) {
-    return (
-      <div className="min-h-screen bg-black p-6">
-        <h1 className="text-3xl font-bold text-gold-400 mb-8">🧣 Dupatta Collection</h1>
-        <p className="text-red-400">Error: {error}</p>
-        <button 
-          onClick={fetchProducts}
-          className="mt-4 border border-gold-500 text-gold-300 px-6 py-2 rounded-lg hover:bg-gold-500 hover:text-black transition-colors"
-        >
-          Retry
-        </button>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-black p-6">
-      <div className="max-w-7xl mx-auto">
-        <h1 className="text-3xl font-bold text-gold-400 mb-8">🧣 Dupatta Collection</h1>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+    <div className="min-h-screen bg-black text-white">
+      {/* <Header currentUser={currentUser} cartItemCount={cartItemCount} /> */}
+
+      {/* Hero Header */}
+      <div className="bg-gradient-to-b from-black to-gray-900 py-20 px-6 border-b border-yellow-600/30">
+        <div className="max-w-7xl mx-auto text-center">
+          <h1 className="text-5xl md:text-6xl font-bold mb-4">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-yellow-600">Dupatta</span> Collection
+          </h1>
+          <p className="text-xl text-gray-400">Elegant drapes for timeless beauty</p>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-6 py-20">
+        {error && (
+          <div className="bg-red-900/20 border border-red-700 text-red-300 px-6 py-4 rounded-2xl mb-8 text-center">
+            {error}
+            <button 
+              onClick={fetchProducts}
+              className="ml-4 text-yellow-400 font-medium hover:text-yellow-300 transition-colors"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
           {products.map((p) => (
             <ProductCard key={p.id} product={p} onAddToCart={addToCart} />
           ))}
         </div>
         
         {products.length === 0 && !loading && (
-          <div className="text-center py-12">
-            <p className="text-gray-400">No dupattas found in this collection</p>
+          <div className="text-center py-24">
+            <p className="text-gray-400 text-xl mb-4">No dupattas found in this collection</p>
+            <a 
+              href="/shopall" 
+              className="inline-block bg-gradient-to-r from-yellow-600 to-yellow-500 text-black px-8 py-3 rounded-full font-semibold hover:from-yellow-500 hover:to-yellow-400 transition-all"
+            >
+              Browse All Collections
+            </a>
           </div>
         )}
       </div>
+
+      <Footer />
     </div>
   );
 }
