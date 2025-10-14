@@ -83,6 +83,12 @@ function AdminNavbar({ admin }: { admin: any }) {
             Products
           </button>
           <button 
+            onClick={() => router.push("/admin/orders")}
+            className="bg-teal-500 px-3 py-1 rounded"
+          >
+            Orders
+          </button>
+          <button 
             onClick={() => router.push("/admin/categories")}
             className="bg-yellow-500 px-3 py-1 rounded"
           >

@@ -12,7 +12,6 @@ export async function POST(req: Request) {
     const description = (formData.get("description") as string) || "";
     const price = Number(formData.get("price"));
     const discount = Number(formData.get("discount")) || 0;
-    const quantity = Number(formData.get("quantity")) || 0;
     const categoryId = formData.get("category_id") as string; // ← Changed from categorySlug to categoryId
     const file = formData.get("file") as File;
 
@@ -179,10 +178,11 @@ export async function POST(req: Request) {
       message: "Product added successfully" 
     });
 
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Failed to add product";
     console.error("Add product error:", err);
     return NextResponse.json(
-      { error: err.message || "Failed to add product" }, 
+      { error: message }, 
       { status: 500 }
     );
   }
