@@ -54,7 +54,11 @@ export default function CartPage() {
       if (res.ok) {
         const data = await res.json();
         setCart(data);
-        const totalItems = data.items?.reduce((sum, item) => sum + item.quantity, 0) || 0;
+       const totalItems = data.items?.reduce(
+  (sum: number, item: { quantity: number }) => sum + item.quantity,
+  0
+) || 0;
+
         setCartItemCount(totalItems);
       }
     } catch (err) {

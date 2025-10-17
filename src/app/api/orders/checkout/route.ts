@@ -6,26 +6,11 @@ import bcrypt from "bcryptjs";
 import { supabaseServer } from "@/lib/supabase/server";
 
 // POST /api/orders/checkout
-// Body: {
-//   password: string,
-//   address: {
-//     shipping_name: string,
-//     shipping_phone?: string,
-//     address_line1: string,
-//     address_line2?: string,
-//     city: string,
-//     state?: string,
-//     postal_code?: string,
-//     country: string
-//   },
-//   payment_option_code: string
-// }
-// Verifies user's password (re-auth), creates an order from the user's cart with address and payment info,
-// inserts order_items, decrements stock, and clears the cart.
 export async function POST(req: Request) {
   try {
     const cookieStore = await cookies();
     const userId = cookieStore.get("user_id")?.value;
+
     if (!userId) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
@@ -39,7 +24,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Password is required" }, { status: 400 });
     }
 
-    // Basic address validation
     if (!address || !address.address_line1 || !address.city || !address.country || !address.shipping_name) {
       return NextResponse.json({ error: "Address fields are incomplete" }, { status: 400 });
     }
@@ -48,7 +32,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Payment option is required" }, { status: 400 });
     }
 
-    // Fetch customer and verify password for re-auth
+    // Fetch customer and verify password
     const { data: customer, error: customerError } = await supabaseServer
       .from("customers")
       .select("id, password, full_name, email")
@@ -64,7 +48,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid password" }, { status: 401 });
     }
 
-    // Get or create user's cart
+    // Get user's cart
     const { data: cart } = await supabaseServer
       .from("carts")
       .select("id")
@@ -75,7 +59,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Cart is empty" }, { status: 400 });
     }
 
-    // Fetch cart items with variant and product info for pricing and stock checks
+    // Fetch cart items with variants
     const { data: items, error: itemsError } = await supabaseServer
       .from("cart_items")
       .select(`
@@ -97,9 +81,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Cart is empty" }, { status: 400 });
     }
 
-    // Validate stock availability
+    // Validate stock
     for (const item of items) {
-      const currentStock = item.product_variant?.stock ?? 0;
+      const variant = Array.isArray(item.product_variant)
+        ? item.product_variant[0]
+        : item.product_variant;
+
+      const currentStock = variant?.stock ?? 0;
+
       if (item.quantity > currentStock) {
         return NextResponse.json(
           { error: `Insufficient stock for an item. Available: ${currentStock}` },
@@ -109,24 +98,31 @@ export async function POST(req: Request) {
     }
 
     // Calculate totals
-    const subtotal = items.reduce((sum: number, item: any) => sum + item.unit_price * item.quantity, 0);
+    const subtotal = items.reduce(
+      (sum: number, item: any) => sum + item.unit_price * item.quantity,
+      0
+    );
     const totalAmount = +subtotal.toFixed(2);
 
-    // Optionally resolve payment option name if table exists
+    // Payment option
     let paymentOptionName: string | null = null;
     const { data: paymentOptData, error: paymentOptError } = await supabaseServer
       .from("payment_options")
       .select("name, code, is_active")
       .eq("code", paymentOptionCode)
       .maybeSingle();
+
     if (!paymentOptError && paymentOptData) {
       if (paymentOptData.is_active !== true) {
-        return NextResponse.json({ error: "Selected payment option is not active" }, { status: 400 });
+        return NextResponse.json(
+          { error: "Selected payment option is not active" },
+          { status: 400 }
+        );
       }
       paymentOptionName = paymentOptData.name;
     }
 
-    // Create order with address and payment info (if columns exist)
+    // Create order
     const { data: order, error: orderError } = await supabaseServer
       .from("orders")
       .insert([
@@ -134,7 +130,6 @@ export async function POST(req: Request) {
           customer_id: userId,
           status: "pending",
           total_amount: totalAmount,
-          // shipping details
           shipping_name: address.shipping_name,
           shipping_phone: address.shipping_phone || null,
           address_line1: address.address_line1,
@@ -143,7 +138,6 @@ export async function POST(req: Request) {
           state: address.state || null,
           postal_code: address.postal_code || null,
           country: address.country,
-          // payment details
           payment_option_code: paymentOptionCode,
           payment_option_name: paymentOptionName,
           payment_status: "unpaid",
@@ -153,7 +147,6 @@ export async function POST(req: Request) {
       .single();
 
     if (orderError || !order) {
-      // If columns are missing, surface helpful SQL to add them
       const maybeMissingColumns = {
         sql: `ALTER TABLE public.orders
   ADD COLUMN IF NOT EXISTS shipping_name text,
@@ -166,17 +159,26 @@ export async function POST(req: Request) {
   ADD COLUMN IF NOT EXISTS country text,
   ADD COLUMN IF NOT EXISTS payment_option_code text,
   ADD COLUMN IF NOT EXISTS payment_option_name text,
-  ADD COLUMN IF NOT EXISTS payment_status text DEFAULT 'unpaid';` };
-      return NextResponse.json({ error: orderError?.message || "Failed to create order", ...maybeMissingColumns }, { status: 500 });
+  ADD COLUMN IF NOT EXISTS payment_status text DEFAULT 'unpaid';`,
+      };
+      return NextResponse.json(
+        { error: orderError?.message || "Failed to create order", ...maybeMissingColumns },
+        { status: 500 }
+      );
     }
 
     // Insert order items
-    const orderItemsPayload = items.map((item: any) => ({
-      order_id: order.id,
-      product_variant_id: item.product_variant.id,
-      quantity: item.quantity,
-      unit_price: item.unit_price,
-    }));
+    const orderItemsPayload = items.map((item: any) => {
+      const variant = Array.isArray(item.product_variant)
+        ? item.product_variant[0]
+        : item.product_variant;
+      return {
+        order_id: order.id,
+        product_variant_id: variant.id,
+        quantity: item.quantity,
+        unit_price: item.unit_price,
+      };
+    });
 
     const { error: orderItemsError } = await supabaseServer
       .from("order_items")
@@ -186,24 +188,30 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: orderItemsError.message }, { status: 500 });
     }
 
-    // Decrement stock per item
+    // Decrement stock
     for (const item of items) {
-      const variantId = item.product_variant.id;
-      const newStock = (item.product_variant.stock as number) - item.quantity;
+      const variant = Array.isArray(item.product_variant)
+        ? item.product_variant[0]
+        : item.product_variant;
+
+      const newStock = (variant.stock as number) - item.quantity;
+
       const { error: updateError } = await supabaseServer
         .from("product_variants")
         .update({ stock: newStock })
-        .eq("id", variantId);
+        .eq("id", variant.id);
+
       if (updateError) {
         return NextResponse.json({ error: updateError.message }, { status: 500 });
       }
     }
 
-    // Clear cart items
+    // Clear cart
     const { error: clearError } = await supabaseServer
       .from("cart_items")
       .delete()
       .eq("cart_id", cart.id);
+
     if (clearError) {
       return NextResponse.json({ error: clearError.message }, { status: 500 });
     }
@@ -218,5 +226,3 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
-
-

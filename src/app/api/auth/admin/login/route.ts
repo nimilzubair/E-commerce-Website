@@ -66,22 +66,15 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json(
-      { 
-        message: "Admin logged in successfully",
-        admin: {
-          id: admin.id,
-          email: admin.email,
-          full_name: admin.full_name,
-          role: admin.role
-        }
-      }, 
-      {
-        status: 200,
-        headers: { 
-          "Set-Cookie": [cookieSerialized, roleCookieSerialized] 
-        },
-      }
-    );
+  { message: "Login successful" },
+  {
+    status: 200,
+    headers: {
+      "Set-Cookie": `${cookieSerialized}, ${roleCookieSerialized}`,
+    },
+  }
+);
+
 
   } catch (err) {
     console.error("Admin login error:", err);

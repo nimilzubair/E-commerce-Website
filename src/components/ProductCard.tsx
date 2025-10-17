@@ -1,8 +1,10 @@
+// components/ProductCard.tsx
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import { Product } from "@/types/product";
+import { useTheme } from "@/context/ThemeContext";
+import Image from "next/image";
 
 interface ProductCardProps {
   product: Product;
@@ -10,69 +12,69 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({ product, onAddToCart }: ProductCardProps) {
+  const { theme } = useTheme();
   const [selectedVariant, setSelectedVariant] = useState(product.product_variants?.[0]);
-  const [isAddingToCart, setIsAddingToCart] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const primaryImage = product.product_images?.find(img => img.is_primary)?.image_url 
-    || product.product_images?.[0]?.image_url 
-    || "/api/placeholder/300/400";
-
-  const discountedPrice = selectedVariant?.price && product.discount 
-    ? selectedVariant.price * (1 - product.discount / 100)
-    : selectedVariant?.price;
-
+  const primaryImage = product.product_images?.find(img => img.is_primary) || product.product_images?.[0];
+  
   const handleAddToCart = async () => {
     if (!selectedVariant) return;
     
-    setIsAddingToCart(true);
-    try {
-      await onAddToCart(selectedVariant.id, product.name);
-    } finally {
-      setIsAddingToCart(false);
-    }
+    setIsLoading(true);
+    await onAddToCart(selectedVariant.id, product.name);
+    setIsLoading(false);
   };
 
+  const hasVariants = product.product_variants && product.product_variants.length > 1;
+  const hasDiscount = (product.discount ?? 0) > 0;
+  const discountedPrice = product.price * (1 - (product.discount || 0) / 100);
+
   return (
-    <div className="group bg-gradient-to-br from-gray-900 to-black rounded-2xl border border-yellow-600/20 hover:border-yellow-500 transition-all duration-300 overflow-hidden hover:shadow-2xl hover:shadow-yellow-500/10">
+    <div className={`rounded-xl overflow-hidden border-2 transition-all duration-300 hover:shadow-lg ${
+      theme === 'dark' 
+        ? 'bg-gradient-to-br from-secondary to-primary border-border-color hover:border-accent' 
+        : 'bg-primary border-border-color hover:border-accent'
+    }`}>
       {/* Product Image */}
-      <div className="relative aspect-[3/4] overflow-hidden bg-gray-800">
+      <div className="relative aspect-square overflow-hidden">
         <Image
-          src={primaryImage}
+          src={primaryImage?.image_url || "/placeholder-image.jpg"}
           alt={product.name}
           fill
-          className="object-cover group-hover:scale-105 transition-transform duration-500"
+          className="object-cover hover:scale-105 transition-transform duration-300"
         />
-        {product.discount && product.discount > 0 && (
-          <div className="absolute top-4 left-4 bg-red-600 text-white px-3 py-1 rounded-full text-sm font-bold">
-            -{product.discount}%
+        {hasDiscount && (
+          <div className="absolute top-2 right-2 bg-red-500 text-primary px-2 py-1 rounded-lg text-sm font-bold">
+            Save {product.discount}%
           </div>
         )}
       </div>
 
       {/* Product Info */}
-      <div className="p-6">
-        <h3 className="text-xl font-bold text-white mb-2 line-clamp-2 group-hover:text-yellow-400 transition-colors">
+      <div className={`p-4 transition-colors duration-300 bg-secondary`}>
+        <h3 className={`font-bold text-lg mb-2 transition-colors duration-300 text-text-primary`}>
           {product.name}
         </h3>
-        
-        <p className="text-gray-400 text-sm mb-4 line-clamp-2">
-          {product.description}
-        </p>
 
         {/* Variant Selection */}
-        {product.product_variants && product.product_variants.length > 1 && (
-          <div className="mb-4">
+        {hasVariants && (
+          <div className="mb-3">
             <select
               value={selectedVariant?.id}
               onChange={(e) => {
                 const variant = product.product_variants?.find(v => v.id === e.target.value);
                 setSelectedVariant(variant);
               }}
-              className="w-full bg-black border border-yellow-600/30 rounded-lg px-3 py-2 text-white text-sm focus:border-yellow-500 focus:outline-none"
+              className={`w-full p-2 rounded-lg border text-sm transition-colors duration-300 ${
+                theme === 'dark' 
+                  ? 'bg-primary border-border-color text-text-primary' 
+                  : 'bg-primary border-border-color text-text-primary'
+              }`}
             >
-              {product.product_variants.map((variant) => (
+              {product.product_variants?.map((variant) => (
                 <option key={variant.id} value={variant.id}>
-                  {variant.size} {variant.color ? `- ${variant.color}` : ''} - PKR {variant.price}
+                  {[variant.size, variant.color].filter(Boolean).join(' • ')}
                 </option>
               ))}
             </select>
@@ -80,15 +82,13 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
         )}
 
         {/* Price */}
-        <div className="flex items-center gap-3 mb-4">
-          {discountedPrice && (
-            <span className="text-2xl font-bold text-yellow-400">
-              PKR {discountedPrice.toFixed(2)}
-            </span>
-          )}
-          {product.discount && product.discount > 0 && selectedVariant?.price && (
-            <span className="text-lg text-gray-400 line-through">
-              PKR {selectedVariant.price.toFixed(2)}
+        <div className="flex items-center gap-2 mb-3">
+          <span className={`text-xl font-bold transition-colors duration-300 text-accent`}>
+            PKR {discountedPrice.toFixed(2)}
+          </span>
+          {hasDiscount && (
+            <span className={`text-sm line-through transition-colors duration-300 text-text-secondary`}>
+              PKR {product.price.toFixed(2)}
             </span>
           )}
         </div>
@@ -96,10 +96,10 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
         {/* Add to Cart Button */}
         <button
           onClick={handleAddToCart}
-          disabled={!selectedVariant || isAddingToCart}
-          className="w-full bg-gradient-to-r from-yellow-600 to-yellow-500 text-black font-bold py-3 rounded-lg hover:from-yellow-500 hover:to-yellow-400 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={isLoading || !selectedVariant}
+          className={`w-full py-3 rounded-lg font-semibold transition-all duration-300 bg-accent text-primary hover:opacity-80 disabled:opacity-50`}
         >
-          {isAddingToCart ? "Adding..." : "Add to Cart"}
+          {isLoading ? 'Adding...' : 'Add to Cart'}
         </button>
       </div>
     </div>

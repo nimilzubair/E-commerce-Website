@@ -2,49 +2,221 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Custom gold color palette */
+/* Custom gold color palette with proper theme support */
+@layer base {
+  :root {
+    /* Light theme gold colors */
+    --gold-50: #fffbeb;
+    --gold-100: #fef3c7;
+    --gold-200: #fde68a;
+    --gold-300: #fcd34d;
+    --gold-400: #fbbf24;
+    --gold-500: #f59e0b;
+    --gold-600: #d97706;
+    --gold-700: #b45309;
+    --gold-800: #92400e;
+    --gold-900: #78350f;
+  }
+
+  :root.light {
+    --bg-primary: #ffffff;
+    --bg-secondary: #f9fafb;
+    --text-primary: #111827;
+    --text-secondary: #6b7280;
+    --border-color: #e5e7eb;
+    --accent-color: var(--gold-600);
+  }
+
+  /* Dark theme (default) */
+  :root {
+    --bg-primary: #000000;
+    --bg-secondary: #111827;
+    --text-primary: #f9fafb;
+    --text-secondary: #d1d5db;
+    --border-color: #374151;
+    --accent-color: var(--gold-400);
+  }
+
+  body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+}
+
 @layer components {
-  .gold-50 {
-    @apply bg-yellow-50;
+  /* Gold background utilities */
+  .bg-gold-50 {
+    background-color: var(--gold-50);
   }
-  .gold-100 {
-    @apply bg-yellow-100;
+  .bg-gold-100 {
+    background-color: var(--gold-100);
   }
-  .gold-300 {
-    @apply bg-yellow-300;
+  .bg-gold-200 {
+    background-color: var(--gold-200);
   }
-  .gold-400 {
-    @apply bg-yellow-400 text-yellow-400;
+  .bg-gold-300 {
+    background-color: var(--gold-300);
   }
-  .gold-500 {
-    @apply bg-yellow-500 text-yellow-500;
+  .bg-gold-400 {
+    background-color: var(--gold-400);
   }
-  .gold-600 {
-    @apply border-yellow-600 text-yellow-600;
+  .bg-gold-500 {
+    background-color: var(--gold-500);
   }
-  .gold-900 {
-    @apply bg-yellow-900 text-yellow-900;
+  .bg-gold-600 {
+    background-color: var(--gold-600);
+  }
+  .bg-gold-700 {
+    background-color: var(--gold-700);
+  }
+  .bg-gold-800 {
+    background-color: var(--gold-800);
+  }
+  .bg-gold-900 {
+    background-color: var(--gold-900);
+  }
+
+  /* Gold text utilities */
+  .text-gold-50 {
+    color: var(--gold-50);
+  }
+  .text-gold-100 {
+    color: var(--gold-100);
+  }
+  .text-gold-200 {
+    color: var(--gold-200);
+  }
+  .text-gold-300 {
+    color: var(--gold-300);
+  }
+  .text-gold-400 {
+    color: var(--gold-400);
+  }
+  .text-gold-500 {
+    color: var(--gold-500);
+  }
+  .text-gold-600 {
+    color: var(--gold-600);
+  }
+  .text-gold-700 {
+    color: var(--gold-700);
+  }
+  .text-gold-800 {
+    color: var(--gold-800);
+  }
+  .text-gold-900 {
+    color: var(--gold-900);
+  }
+
+  /* Gold border utilities */
+  .border-gold-300 {
+    border-color: var(--gold-300);
+  }
+  .border-gold-400 {
+    border-color: var(--gold-400);
+  }
+  .border-gold-500 {
+    border-color: var(--gold-500);
+  }
+  .border-gold-600 {
+    border-color: var(--gold-600);
+  }
+
+  /* Theme-aware utility classes */
+  .theme-bg-primary {
+    background-color: var(--bg-primary);
+  }
+  
+  .theme-bg-secondary {
+    background-color: var(--bg-secondary);
+  }
+  
+  .theme-text-primary {
+    color: var(--text-primary);
+  }
+  
+  .theme-text-secondary {
+    color: var(--text-secondary);
+  }
+  
+  .theme-border {
+    border-color: var(--border-color);
+  }
+  
+  .theme-accent {
+    color: var(--accent-color);
+  }
+
+  /* Gold gradient utilities */
+  .gold-gradient {
+    background: linear-gradient(135deg, var(--gold-400), var(--gold-600));
+  }
+  
+  .gold-gradient-light {
+    background: linear-gradient(135deg, var(--gold-200), var(--gold-400));
+  }
+  
+  .gold-gradient-dark {
+    background: linear-gradient(135deg, var(--gold-600), var(--gold-800));
   }
 }
 
-/* Smooth scrolling */
-html {
-  scroll-behavior: smooth;
+@layer utilities {
+  /* Smooth scrolling */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Remove default button styles */
+  button {
+    border: none;
+  }
+
+  /* Focus styles for accessibility */
+  *:focus-visible {
+    outline: 2px solid var(--gold-400);
+    outline-offset: 2px;
+  }
+
+  /* Ensure consistent font rendering */
+  body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Smooth transitions for theme changes */
+  * {
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+  }
+
+  /* Custom scrollbar for webkit browsers */
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: var(--bg-secondary);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--gold-500);
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--gold-400);
+  }
 }
 
-/* Remove default button styles */
-button {
-  border: none;
-}
-
-/* Focus styles for accessibility */
-*:focus-visible {
-  outline: 2px solid #fbbf24;
-  outline-offset: 2px;
-}
-
-/* Ensure consistent font rendering */
-body {
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+/* Print styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  body {
+    background: white !important;
+    color: black !important;
+  }
 }

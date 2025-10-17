@@ -21,10 +21,10 @@ export async function POST() {
   });
 
   return NextResponse.json(
-    { message: "Admin signed out successfully" }, 
+    { message: "Admin signed out successfully" },
     {
-      headers: { 
-        "Set-Cookie": [adminIdCookie, adminRoleCookie] 
+      headers: {
+        "Set-Cookie": `${adminIdCookie}, ${adminRoleCookie}`,
       },
     }
   );

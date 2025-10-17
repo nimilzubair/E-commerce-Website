@@ -38,7 +38,11 @@ export default function WinterPage() {
       const res = await fetch('/api/cart');
       if (res.ok) {
         const data = await res.json();
-        const totalItems = data.items?.reduce((sum, item) => sum + item.quantity, 0) || 0;
+        const totalItems = data.items?.reduce(
+  (sum: number, item: { quantity: number }) => sum + item.quantity,
+  0
+) || 0;
+
         setCartItemCount(totalItems);
       }
     } catch (error) {
