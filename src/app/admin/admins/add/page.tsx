@@ -1,3 +1,4 @@
+// admin/admins/add/page.tsx
 "use client";
 
 import { useState } from "react";
@@ -48,78 +49,78 @@ export default function AddAdminPage() {
   };
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-4">Add New Admin</h1>
-      
-      <form onSubmit={handleSubmit} className="max-w-2xl">
-        <div className="space-y-4">
-          <div>
-            <label className="block font-bold mb-1">Full Name</label>
-            <input
-              type="text"
-              name="full_name"
-              value={formData.full_name}
-              onChange={handleChange}
-              required
-              className="border p-2 rounded w-full"
-            />
-          </div>
+    <div className="bg-white border border-yellow-400 rounded-lg shadow-sm p-8 max-w-2xl mx-auto">
+      <h1 className="text-2xl font-bold text-gray-800 mb-6 border-b border-yellow-300 pb-2">
+        Add New Admin
+      </h1>
 
-          <div>
-            <label className="block font-bold mb-1">Email</label>
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              required
-              className="border p-2 rounded w-full"
-            />
-          </div>
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <div>
+          <label className="block font-medium text-gray-700 mb-1">Full Name</label>
+          <input
+            type="text"
+            name="full_name"
+            value={formData.full_name}
+            onChange={handleChange}
+            required
+            className="bg-[#f9f9f9] border border-gray-300 focus:border-yellow-500 focus:ring-yellow-500 p-2 rounded w-full outline-none transition"
+          />
+        </div>
 
-          <div>
-            <label className="block font-bold mb-1">Password</label>
-            <input
-              type="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              required
-              className="border p-2 rounded w-full"
-              minLength={6}
-            />
-          </div>
+        <div>
+          <label className="block font-medium text-gray-700 mb-1">Email</label>
+          <input
+            type="email"
+            name="email"
+            value={formData.email}
+            onChange={handleChange}
+            required
+            className="bg-[#f9f9f9] border border-gray-300 focus:border-yellow-500 focus:ring-yellow-500 p-2 rounded w-full outline-none transition"
+          />
+        </div>
 
-          <div>
-            <label className="block font-bold mb-1">Role</label>
-            <select
-              name="role"
-              value={formData.role}
-              onChange={handleChange}
-              className="border p-2 rounded w-full"
-            >
-              <option value="moderator">Moderator</option>
-              <option value="admin">Admin</option>
-              <option value="super_admin">Super Admin</option>
-            </select>
-          </div>
+        <div>
+          <label className="block font-medium text-gray-700 mb-1">Password</label>
+          <input
+            type="password"
+            name="password"
+            value={formData.password}
+            onChange={handleChange}
+            required
+            minLength={6}
+            className="bg-[#f9f9f9] border border-gray-300 focus:border-yellow-500 focus:ring-yellow-500 p-2 rounded w-full outline-none transition"
+          />
+        </div>
 
-          <div className="flex gap-4">
-            <button
-              type="submit"
-              disabled={loading}
-              className="bg-blue-500 text-white px-4 py-2 rounded"
-            >
-              {loading ? "Adding..." : "Add Admin"}
-            </button>
-            <button
-              type="button"
-              onClick={() => router.push("/admin/admins")}
-              className="bg-gray-500 text-white px-4 py-2 rounded"
-            >
-              Cancel
-            </button>
-          </div>
+        <div>
+          <label className="block font-medium text-gray-700 mb-1">Role</label>
+          <select
+            name="role"
+            value={formData.role}
+            onChange={handleChange}
+            className="bg-[#f9f9f9] border border-gray-300 focus:border-yellow-500 focus:ring-yellow-500 p-2 rounded w-full outline-none transition"
+          >
+            <option value="moderator">Moderator</option>
+            <option value="admin">Admin</option>
+            <option value="super_admin">Super Admin</option>
+          </select>
+        </div>
+
+        <div className="flex gap-4 pt-3">
+          <button
+            type="submit"
+            disabled={loading}
+            className="bg-yellow-500 hover:bg-yellow-600 text-white font-medium px-6 py-2 rounded transition disabled:opacity-70"
+          >
+            {loading ? "Adding..." : "Add Admin"}
+          </button>
+          <button
+            type="button"
+            onClick={() => router.push("/admin/admins")}
+            className="border border-gray-300 text-gray-700 hover:bg-gray-100 font-medium px-6 py-2 rounded transition"
+          >
+            Cancel
+          </button>
         </div>
       </form>
     </div>
